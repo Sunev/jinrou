@@ -39,7 +39,7 @@ ss.http.middleware.prepend(middleware.jsonapi);
 ss.http.middleware.prepend(middleware.manualxhr);
 ss.http.middleware.prepend(middleware.images);
 
-//リッスン先設定
+//リッスン先设定
 ss.ws.transport.use("engineio",{
 	client:Config.ws.connect,
 

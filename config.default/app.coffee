@@ -21,12 +21,12 @@ module.exports =
     pass: "test"
 
   admin:
-    # 管理者権限を行使する際のパスワード
+    # 管理者権限を行使する際の密码
     password: "test"
     # trueにしてはいけない
     securityHole: false
   maintenance:
-    # 人狼の更新などを行う際のパスワード
+    # 人狼の更新などを行う際の密码
     password: "test"
     # 人狼の更新スクリプト
     script:[
@@ -48,8 +48,8 @@ module.exports =
       accessToken:"******"
       accessTokenSecret:"******"
   
-  # ルーム管理について
+  # 房间管理について
   rooms:
-    # 古い部屋に入るまでの時間(hours)
+    # 古い部屋に入るまでの时间(hours)
     fresh:24*3
 	

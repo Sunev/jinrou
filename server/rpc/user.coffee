@@ -52,7 +52,7 @@ exports.actions =(req,res,ss)->
             res()
             
 # 新規登録
-# cb: エラーメッセージ（成功なら偽）
+# cb: 错误メッセージ（成功なら偽）
     newentry: (query)->
         unless /^\w+$/.test(query.userid)
             res {
@@ -63,7 +63,7 @@ exports.actions =(req,res,ss)->
         unless /^\w+$/.test(query.password)
             res {
                 login:false
-                error:"パスワードが不正です"
+                error:"密码が不正です"
             }
             return
         M.users.find({"userid":query.userid}).count (err,count)->
@@ -83,7 +83,7 @@ exports.actions =(req,res,ss)->
                     return
                 login query,req,res,ss
                 
-# ユーザーデータが欲しい
+# ユーザー数据が欲しい
     userData: (userid,password)->
         M.users.findOne {"userid":userid},(err,record)->
             if err?
@@ -111,7 +111,7 @@ exports.actions =(req,res,ss)->
                 "#{(u.win.length/(u.win.length+u.lose.length)*100).toPrecision(2)}%"
             # 称号の処理をしてあげる
             u.prize ?= []
-            u.prizenames=u.prize.map (x)->{id:x,name:Server.prize.prizeName(x),phonetic:Server.prize.prizePhonetic(x) ? null}
+            u.prizenames=u.prize.map (x)->{id:x,name:Server.prize.prizeName(x),phonetic:Server.prize.prizePhonetic(x) ? "undefined"}
             delete u.prize
             res u
         else
@@ -123,13 +123,13 @@ exports.actions =(req,res,ss)->
                 res {error:err}
                 return
             res results
-# twitterアイコンを調べてあげる
+# twitter头像を調べてあげる
     getTwitterIcon:(id)->
         Server.oauth.getTwitterIcon id,(url)->
             res url
         
                 
-# プロフィール変更 返り値=変更後 {"error":"message"}
+# 配置変更 返り値=変更後 {"error":"message"}
     changeProfile: (query)->
         M.users.findOne {"userid":req.session.userId,"password":Server.user.crpassword(query.password)},(err,record)=>
             if err?
@@ -142,8 +142,18 @@ exports.actions =(req,res,ss)->
                 if query.name==""
                     res {error:"ニックネームを入力して下さい"}
                     return
-                    
                 record.name=query.name
+
+            #max bytes of nick name
+            maxLength=30
+            record.name = record.name.trim()
+            if record.name == ''
+                res {error:"昵称不能仅为空格"}
+                return
+            else if record.name.replace(/[^\x00-\xFF]/g,'**').length > maxLength
+                res {error:"昵称不能超过"+maxLength+"个字节。"}
+                return
+
             if query.email?
                 record.email=query.email
             if query.comment? && query.comment.length<=200
@@ -152,7 +162,7 @@ exports.actions =(req,res,ss)->
                 record.icon=query.icon
             M.users.update {"userid":req.session.userId}, record, {safe:true},(err,count)=>
                 if err?
-                    res {error:"プロフィール変更に失敗しました"}
+                    res {error:"配置変更に失敗しました"}
                     return
                 delete record.password
                 req.session.user=record
@@ -167,11 +177,11 @@ exports.actions =(req,res,ss)->
                 res {error:"ユーザー認証に失敗しました"}
                 return
             if query.newpass!=query.newpass2
-                res {error:"パスワードが一致しません"}
+                res {error:"密码が一致しません"}
                 return
             M.users.update {"userid":req.session.userId}, {$set:{password:Server.user.crpassword(query.newpass)}},{safe:true},(err,count)=>
                 if err?
-                    res {error:"プロフィール変更に失敗しました"}
+                    res {error:"配置変更に失敗しました"}
                     return
                 res null
     usePrize: (query)->
@@ -212,16 +222,16 @@ exports.actions =(req,res,ss)->
 # 成績をくわしく見る
     getMyuserlog:->
         unless req.session.userId
-            res {error:"ログインして下さい"}
+            res {error:"请登陆"}
             return
         myid=req.session.userId
-        # DBから自分のやつを引っ張ってくる
+        # DBから自己のやつを引っ張ってくる
         results=[]
         M.userlogs.findOne {userid:myid},(err,doc)->
             if err?
                 console.error err
             unless doc?
-                # 戦績データがない
+                # 戦績数据がない
                 res null
                 return
             res doc
@@ -230,7 +240,7 @@ exports.actions =(req,res,ss)->
             
 
 
-#パスワードハッシュ化
+#密码ハッシュ化
 #   crpassword: (raw)-> raw && hashlib.sha256(raw+hashlib.md5(raw))
 exports.crpassword= (raw)->
         return "" unless raw
@@ -238,8 +248,8 @@ exports.crpassword= (raw)->
         md5=crypto.createHash "md5"
         md5.update raw  # md5でハッシュ化
         sha256.update raw+md5.digest 'hex'  # sha256でさらにハッシュ化
-        sha256.digest 'hex' # 結果を返す
-#ユーザーデータ作る
+        sha256.digest 'hex' # 结果を返す
+#ユーザー数据作る
 makeuserdata=(query)->
     {
         userid: query.userid
@@ -251,8 +261,8 @@ makeuserdata=(query)->
         lose:[] # 負け試合
         gone:[] # 行方不明試合
         ip:""   # IPアドレス
-        prize:[]# 現在持っている称号
+        prize:[]# 现在持っている称号
         ownprize:[] # 何かで与えられた称号（prizeに含まれる）
-        nowprize:null   # 現在設定している肩書き
+        nowprize:null   # 现在设定している肩書き
                 # [{type:"prize",value:(prizeid)},{type:"conjunction",value:"が"},...]
     }

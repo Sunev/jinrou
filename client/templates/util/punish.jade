@@ -1,0 +1,10 @@
+section.window
+  h1
+    = title
+    input.closer(type="button",value="×",name="cancel")
+  p 以下玩家在本局游戏中猝死，请投票选择对其中的某些人进行处罚，每人每票将为其带来#{time}分钟封禁
+  form(name="punish",aciton="/")#punishform
+    div(id="prePunishUser")
+    p
+      input(type="submit",name="ok",value="OK")
+      input(type="button",name="cancel",value="取消")

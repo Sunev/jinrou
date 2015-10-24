@@ -14,7 +14,7 @@ room: {
   number: Number(プレイヤー数)
   players:[PlayerObject,PlayerObject,...]
   gm: Booelan(trueならオーナーGM)
-  jobrule: String   //開始後はなんの配役か（エンドレス闇鍋用）
+  jobrule: String   //开始後はなんの配役か（Endless黑暗火锅用）
 }
 PlayerObject.start=Boolean
 PlayerObject.mode="player" / "gm" / "helper"
@@ -40,22 +40,22 @@ Server=
         game:require './game.coffee'
         rooms:module.exports
     oauth:require '../../oauth.coffee'
-# ヘルパーセット処理
+# 帮手セット処理
 sethelper=(ss,roomid,userid,id,res)->
     Server.game.rooms.oneRoomS roomid,(room)->
         if !room || room.error?
-            res "その部屋はありません"
+            res "这个房间不存在"
             return
         pl = room.players.filter((x)->x.realid==userid)[0]
         topl=room.players.filter((x)->x.userid==id)[0]
         if pl?.mode=="gm"
-            res "GMはヘルパーになれません"
+            res "GM不能成为帮手"
             return
         if userid==id
-            res "自分のヘルパーにはなれません"
+            res "不能成为自己的帮手"
             return
         unless room.mode=="waiting"
-            res "もう始まっています"
+            res "游戏已经开始"
             return
         mode= if topl? then "helper_#{id}" else "player"
         room.players.forEach (x,i)=>
@@ -64,10 +64,10 @@ sethelper=(ss,roomid,userid,id,res)->
                 query.$set["players.#{i}.mode"]=mode
                 M.rooms.update {id:roomid},query, (err)=>
                     if err?
-                        res "エラー:#{err}"
+                        res "错误:#{err}"
                     else
                         res null
-                        # ヘルパーの様子を 知らせる
+                        # 帮手の様子を 知らせる
                         if pl.mode!=mode
                             # 新しくなった
                             Server.game.game.helperlog room,pl,topl
@@ -130,17 +130,18 @@ module.exports.actions=(req,res,ss)->
     # 失敗: {error: ""}
     newRoom: (query)->
         unless req.session.userId
-            res {error: "ログインしていません"}
+            res {error: "没有登陆"}
             return
         M.rooms.find().sort({id:-1}).limit(1).nextObject (err,doc)=>
             id=if doc? then doc.id+1 else 1
             
-            #make sure same user won't build new room within short period
-            minTimeInterval = 30*1000
-            if doc.owner.userid==req.session.user.userid
-                if (Date.now()-doc.made)<minTimeInterval
-                    res {error: "You con't build new room within #{((minTimeInterval-(Date.now()-doc.made))/1000).toFixed(0)} second."}
-                    return
+            #在一定时间间隔内，同一用户不能连续建房
+            minTimeInterval = 60*1000
+            unless id>1
+                if doc.owner.userid==req.session.user.userid
+                    if (Date.now()-doc.made)<minTimeInterval
+                        res {error: "您在#{((minTimeInterval-(Date.now()-doc.made))/1000).toFixed(0)}秒内不能连续建房。"}
+                        return
             room=
                 id:id   #ID連番
                 name: query.name
@@ -149,6 +150,9 @@ module.exports.actions=(req,res,ss)->
                 players:[]
                 made:Date.now()
                 jobrule:null
+            if room.number>40
+                res {error: "拒绝40人以上超大房，从你我做起。"}
+                return
             room.password=query.password ? null
             room.blind=query.blind
             room.comment=query.comment ? ""
@@ -177,45 +181,58 @@ module.exports.actions=(req,res,ss)->
             M.rooms.insert room
             Server.game.game.newGame room,ss
             res {id: room.id}
-            Server.oauth.template room.id,"「#{room.name}」（#{room.id}番#{if room.password then '・パスワードあり' else ''}#{if room.blind then '・覆面' else ''}#{if room.gm then '・GMあり' else ''}）が建てられました。 #月下人狼",Config.admin.password
+            Server.oauth.template room.id,"「#{room.name}」（房间号：#{room.id} #{if room.password then '・有密码' else ''}#{if room.blind then '・匿名模式' else ''}#{if room.gm then '・有GM' else ''}）建成了。 #月下人狼",Config.admin.password
 
     # 部屋に入る
-    # 成功ならnull 失敗ならエラーメッセージ
+    # 成功ならnull 失敗なら错误メッセージ
     join: (roomid,opt)->
         unless req.session.userId
-            res {error:"ログインして下さい",require:"login"}    # ログインが必要
+            res {error:"请登陆",require:"login"}    # ログインが必要
             return
+        M.users.findOne {userid:req.session.userId},(err,doc)->
+            unless doc?
+                res {error:"请注册",require:"login"}    # 需要注册
+                return
         M.blacklist.findOne {$or:[{userid:req.session.userId},{ip:req.session.user.ip}]},(err,doc)=>
             if doc?
-                if !doc.expires || doc.expires.getTime()>=Date.now()
-                    res error:"参加は禁止されています"
+                ###
+                if doc.ip? && doc.timestamp? && doc.timestamp > Date.now() + 1000*60*60
+                    res error:"被禁止参与游戏"
                     return
+                ###
+                if !doc.expires || doc.expires.getTime()>=Date.now()
+                    res error:"被禁止参与游戏"
+                    return
+                if doc.expires? && doc.expires.getTime()<Date.now()
+                    M.blacklist.remove {userid:req.session.userId},(err,doc)->
+                        unless doc?
+                            return
             
             Server.game.rooms.oneRoomS roomid,(room)=>
                 if !room || room.error?
-                    res error:"その部屋はありません"
+                    res error:"这个房间不存在"
                     return
                 if req.session.userId in (room.players.map (x)->x.realid)
-                    res error:"すでに参加しています"
+                    res error:"已经加入"
                     return
                 if opt.name in (room.players.map (x)->x.name)
-                    res error:"名前 #{opt.name} は既に存在します"
+                    res error:"昵称 #{opt.name} 已经存在"
                     return
                 if room.gm && room.owner.userid==req.session.userId
-                    res error:"ゲームマスターは参加できません"
+                    res error:"GM不能加入游戏"
                     return
-                unless room.mode=="waiting" || (room.mode=="playing" && room.jobrule=="特殊ルール.エンドレス闇鍋")
-                    res error:"既に参加は締めきられています"
+                unless room.mode=="waiting" || (room.mode=="playing" && room.jobrule=="特殊规则.Endless黑暗火锅")
+                    res error:"放弃加入游戏"
                     return
                 if room.mode=="waiting" && room.players.length >= room.number
                     # 満員
-                    res error:"これ以上入れません"
+                    res error:"房间已满"
                     return
-                if room.mode=="playing" && room.jobrule=="特殊ルール.エンドレス闇鍋"
-                    # エンドレス闇鍋の場合はゲーム内人数による人数判定を行う
+                if room.mode=="playing" && room.jobrule=="特殊规则.Endless黑暗火锅"
+                    # Endless黑暗火锅の場合は游戏内人数による人数判定を行う
                     if Server.game.game.endlessPlayersNumber(roomid) >= room.number
                         # 満員
-                        res error:"これ以上入れません"
+                        res error:"房间已满"
                         return
                 #room.players.push req.session.user
                 su=req.session.user
@@ -230,17 +247,17 @@ module.exports.actions=(req,res,ss)->
                     nowprize:su.nowprize
                 
                 # 同IP制限
-                ###
+                
                 if room.players.some((x)->x.ip==su.ip) && su.ip!="127.0.0.1"
-                    res error:"重複参加はできません #{su.ip}"
+                    res error:"禁止多开 #{su.ip}"
                     return
-                ###
+                
                 
                 if room.blind
                     unless opt?.name
-                        res error:"名前を入力して下さい"
+                        res error:"请输入昵称"
                         return
-                    # 覆面
+                    # 匿名模式
                     makeid=->   # ID生成
                         re=""
                         while !re
@@ -256,7 +273,7 @@ module.exports.actions=(req,res,ss)->
                     user.icon= opt.icon ? null
                 M.rooms.update {id:roomid},{$push: {players:user}},(err)=>
                     if err?
-                        res error:"エラー:#{err}"
+                        res error:"错误:#{err}"
                     else
                         res null
                         # 入室通知
@@ -267,26 +284,26 @@ module.exports.actions=(req,res,ss)->
     # 部屋から出る
     unjoin: (roomid)->
         unless req.session.userId
-            res "ログインして下さい"
+            res "请登陆"
             return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room || room.error?
-                res "その部屋はありません"
+                res "这个房间不存在"
                 return
             pl = room.players.filter((x)->x.realid==req.session.userId)[0]
             unless pl
-                res "まだ参加していません"
+                res "尚未加入游戏"
                 return
             if pl.mode=="gm"
-                res "GMは退室できません"
+                res "GM不能退出房间"
                 return
             unless room.mode=="waiting"
-                res "もう始まっています"
+                res "游戏已经开始"
                 return
             #room.players=room.players.filter (x)=>x!=req.session.userId
             M.rooms.update {id:roomid},{$pull: {players:{realid:req.session.userId}}},(err)=>
                 if err?
-                    res "エラー:#{err}"
+                    res "错误:#{err}"
                 else
                     res null
                     # 退室通知
@@ -294,7 +311,7 @@ module.exports.actions=(req,res,ss)->
                     room.players=room.players.filter (x)->x.realid!=req.session.userId
                     Server.game.game.outlog room,user ? req.session.user
                     ss.publish.channel "room#{roomid}", "unjoin", user?.userid
-                    # ヘルパーさがす
+                    # 帮手さがす
                     query={$set:{}}
                     for pl,i in room.players
                         if pl.mode=="helper_#{user.userid}"
@@ -312,17 +329,17 @@ module.exports.actions=(req,res,ss)->
         # 準備ができたか？
         console.log req.session.userId
         unless req.session.userId
-            res "ログインして下さい"
+            res "请登陆"
             return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room || room.error?
-                res "その部屋はありません"
+                res "这个房间不存在"
                 return
             unless req.session.userId in (room.players.map (x)->x.realid)
-                res "まだ参加していません"
+                res "尚未加入游戏"
                 return
             unless room.mode=="waiting"
-                res "もう始まっています"
+                res "游戏已经开始"
                 return
             room.players.forEach (x,i)=>
                 if x.realid==req.session.userId
@@ -330,7 +347,7 @@ module.exports.actions=(req,res,ss)->
                     query.$set["players.#{i}.start"]=!x.start
                     M.rooms.update {id:roomid},query, (err)=>
                         if err?
-                            res "エラー:#{err}"
+                            res "错误:#{err}"
                         else
                             res null
                             # ready? 知らせる
@@ -339,29 +356,29 @@ module.exports.actions=(req,res,ss)->
     # 部屋から追い出す
     kick:(roomid,id)->
         unless req.session.userId
-            res "ログインして下さい"
+            res "请登陆"
             return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room || room.error?
-                res "その部屋はありません"
+                res "这个房间不存在"
                 return
             if room.owner.userid != req.session.userId
-                res "オーナーしかkickできません"
+                res "不能将房主踢出游戏"
                 console.log room.owner,req.session.userId
                 return
             unless room.mode=="waiting"
-                res "もう始まっています"
+                res "游戏已经开始"
                 return
             pl=room.players.filter((x)->x.userid==id)[0]
             unless pl
-                res "そのユーザーは参加していません"
+                res "这个玩家没有加入游戏"
                 return
             if pl.mode=="gm"
-                res "GMはkickできません"
+                res "GM无法被踢出游戏"
                 return
             M.rooms.update {id:roomid},{$pull: {players:{userid:id}}},(err)=>
                 if err?
-                    res "エラー:#{err}"
+                    res "错误:#{err}"
                 else
                     res null
                     # 退室通知
@@ -370,7 +387,7 @@ module.exports.actions=(req,res,ss)->
                         Server.game.game.kicklog room,user
                         ss.publish.channel "room#{roomid}", "unjoin",id
                         ss.publish.user id,"refresh",{id:roomid}
-                        # ヘルパーさがす
+                        # 帮手さがす
                         query={$set:{}}
                         for pl,i in room.players
                             if pl.mode=="helper_#{user.userid}"
@@ -381,27 +398,27 @@ module.exports.actions=(req,res,ss)->
                                     ss.publish.channel "room#{roomid}", "ready", {userid:pl.userid,start:false}
                         if Object.keys(query.$set).length>0
                             M.rooms.update {id:roomid},query
-    # ヘルパーになる
+    # 帮手になる
     helper:(roomid,id)->
         unless req.session.userId
-            res "ログインして下さい"
+            res "请登陆"
             return
         sethelper ss,roomid,req.session.userId,id,res
-    # 全員ready解除する
+    # 全员ready解除する
     unreadyall:(roomid,id)->
         unless req.session.userId
-            res "ログインして下さい"
+            res "请登陆"
             return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room || room.error?
-                res "その部屋はありません"
+                res "这个房间不存在"
                 return
             if room.owner.userid != req.session.userId
-                res "オーナーしかkickできません"
+                res "不能将房主踢出游戏"
                 console.log room.owner,req.session.userId
                 return
             unless room.mode=="waiting"
-                res "もう始まっています"
+                res "游戏已经开始"
                 return
             query={$set:{}}
             for x,i in room.players
@@ -409,27 +426,27 @@ module.exports.actions=(req,res,ss)->
                     query.$set["players.#{i}.start"]=false
             M.rooms.update {id:roomid},query,(err)=>
                 if err?
-                    res "エラー:#{err}"
+                    res "错误:#{err}"
                 else
                     res null
                     # readyを初期化する系
                     ss.publish.channel "room#{roomid}", "unreadyall",id
     
     
-    # 成功ならjoined 失敗ならエラーメッセージ
-    # 部屋ルームに入る
+    # 成功ならjoined 失敗なら错误メッセージ
+    # 部屋房间に入る
     enter: (roomid,password)->
         #unless req.session.userId
-        #   res {error:"ログインして下さい"}
+        #   res {error:"请登陆"}
         #   return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room?
-                res {error:"その部屋はありません"}
+                res {error:"这个房间不存在"}
                 return
             if room.error?
                 res {error:room.error}
                 return
-            # 古い部屋ならパスワードいらない
+            # 古い部屋なら密码いらない
             od=Date.now()-Config.rooms.fresh*3600000
             if room.password? && room.mode!="end" && room.made>od && room.password!=password && password!=Config.admin.password
                 res {require:"password"}
@@ -440,11 +457,11 @@ module.exports.actions=(req,res,ss)->
             Server.game.game.playerchannel roomid,req.session
             res {joined:room.players.some((x)=>x.realid==req.session.userId)}
     
-    # 成功ならnull 失敗ならエラーメッセージ
-    # 部屋ルームから出る
+    # 成功ならnull 失敗なら错误メッセージ
+    # 部屋房间から出る
     exit: (roomid)->
         #unless req.session.userId
-        #   res "ログインして下さい"
+        #   res "请登陆"
         #   return
         #       req.session.channel.unsubscribe "room#{roomid}"
         req.session.channel.reset()
@@ -452,21 +469,21 @@ module.exports.actions=(req,res,ss)->
     # 部屋を削除
     del: (roomid)->
         unless req.session.userId
-            res "ログインして下さい"
+            res "请登陆"
             return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room || room.error?
-                res "その部屋はありません"
+                res "这个房间不存在"
                 return
             if !room.old && room.owner.userid != req.session.userId
-                res "オーナーしか削除できません"
+                res "除了房主无法删除房间"
                 return
             unless room.mode=="waiting"
-                res "もう始まっています"
+                res "游戏已经开始"
                 return
             M.rooms.update {id:roomid},{$set: {mode:"end"}},(err)=>
                 if err?
-                    res "エラー:#{err}"
+                    res "错误:#{err}"
                 else
                     res null
                     Server.game.game.deletedlog room
@@ -474,14 +491,14 @@ module.exports.actions=(req,res,ss)->
     # 部屋探し
     find:(query,page)->
         unless query?
-            res {error:"クエリが不正です"}
+            res {error:"检索无效"}
             return
-        res {error:"現在ログ検索は利用できません。"}
+        res {error:"现在无法使用检索。"}
         return
         q=
             finished:true
         if query.result_team
-            q.winner=query.result_team  # 勝利陣営
+            q.winner=query.result_team  # 胜利阵营
         if query.min_number? && query.max_number
             q["$where"]="#{query.min_number}<=(l=this.players.length) && l<=#{query.max_number}"
         else if query.min_number?
@@ -512,8 +529,56 @@ module.exports.actions=(req,res,ss)->
                     if x.blind
                         delete x.owner
                         x.players.forEach (p)->
+                            unless p?
+                                console.log "room fatal error ID:"+x.id
+                                return
                             delete p.realid
                 res docs
+    suddenDeathPunish:(roomid,opt)->
+        # opt = ["someID","someID"]
+        unless opt.length
+            res error:"对象为空"
+            return
+        unless req.session.userId
+            res {error:"请登陆",require:"login"}    # ログインが必要
+            return
+        Server.game.rooms.oneRoomS roomid,(room)=>
+            if !room || room.error?
+                res error:"这个房间不存在"
+                return
+            unless req.session.userId in (room.players.map (x)->x.realid)
+                res error:"没有加入游戏"
+                return
+            for banTarget in opt
+                unless banTarget in (room.players.map (x)->x.realid)
+                    res error:"对象非法"
+                    return
+                console.log "目标"+banTarget
+                banTargetName = ((room.players.filter((pl)->pl.realid==banTarget)).map (x)->x.name).toString()
+                banMinutes = parseInt(60/room.players.length)
+                console.log "name"+banTargetName
+                M.users.findOne {userid:banTarget},(err,doc)->
+                    unless doc?
+                        res error:"此用户不存在"
+                        return
+                    addquery=
+                        userid:doc.userid
+                        timestamp:Date.now()
+                    M.blacklist.findOne {userid:banTarget},(err,doc)->
+                        unless doc?
+                            d=new Date()
+                            d.setMinutes d.getMinutes()+banMinutes
+                            addquery.expires=d
+                            M.blacklist.insert addquery,{safe:true},(err,doc)->
+                                ss.publish.channel "room#{roomid}", "punishresult", {id:roomid,name:banTargetName}
+                                res null
+                            return
+                        if doc.expires? then d=doc.expires else d=new Date()
+                        d.setMinutes d.getMinutes()+banMinutes
+                        addquery.expires=d
+                        M.blacklist.update {userid:banTarget},{$set:{expires:addquery.expires}},{safe:true},(err,doc)->
+                            ss.publish.channel "room#{roomid}", "punishresult", {id:roomid,userid:banTarget,name:banTargetName}
+                            res null
             
 
 #res: (err)->

@@ -1,8 +1,8 @@
 exports.start=->
-	# 役職数
+	# 职业数
 	$("#number_of_jobs").text Shared.game.jobs.length
 	
-	# 役職一覧ページ
+	# 职业一览ページ
 	j=$("#joblist_main")
 	if j.get 0
 		for job in Shared.game.jobs

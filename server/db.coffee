@@ -13,7 +13,7 @@ dbinit= ->
           return (cb)->
             if ++count>=7
               console.log "Mongodb Connected"
-              # ゲームデータ読み込みをしてもらう
+              # 游戏数据読み込みをしてもらう
               #SS.server.game.game.loadDB()
         )()
 
