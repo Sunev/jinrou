@@ -248,9 +248,9 @@ module.exports.actions=(req,res,ss)->
                 
                 # 同IP制限
                 
-                if room.players.some((x)->x.ip==su.ip) && su.ip!="127.0.0.1"
-                    res error:"禁止多开 #{su.ip}"
-                    return
+                #if room.players.some((x)->x.ip==su.ip) && su.ip!="127.0.0.1"
+                #    res error:"禁止多开 #{su.ip}"
+                #    return
                 
                 
                 if room.blind
