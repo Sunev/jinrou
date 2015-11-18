@@ -267,6 +267,10 @@
           p
             | 请选择要诅咒的人:
             input(type="submit",value="选择",data-job="Ushinotokimairi")
+		#form_MentalExaminator(hidden).jobformarea
+		  p
+			| 请选择要鉴定的人:
+            input(type="submit",value="鉴定",data-job="MentalExaminator")
       form#speakform
         p
           input(size="50",name="comment",required)
