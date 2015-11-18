@@ -818,9 +818,9 @@ exports.jobinfo=
             name:"面包店"
             color:"#fad587"
         MentalExaminator:
-			name:"精神鉴定师"
-			color:"#000099"
-			
+            name:"精神鉴定师"
+            color:"#000099"
+            
     Werewolf:
         name:"人狼阵营"
         color:"#DD0000"
