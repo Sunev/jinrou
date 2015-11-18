@@ -5764,9 +5764,13 @@ class Ushinotokimairi extends Madman
             player.addGamelog game,"cursekill",null,@id
         super
 
-class MentalExaminator extends Diviner
+class MentalExaminator extends Player
 	type:"MentalExaminator"
 	jobname:"精神鉴定师"
+    constructor:->
+        super
+        @results=[]
+            # {player:Player, result:String}
     sunset:(game)->
         @setTarget null
         if game.day==1
@@ -5804,6 +5808,15 @@ class MentalExaminator extends Diviner
                 player: game.getPlayer(@target).publicinfo()
                 result: "根据 #{@name} 的精神鉴定结果，#{pl.name} #{resultstring}。"
             }
+    sunrise:(game)->
+        super
+        unless game.rule.divineresult=="immediate"
+            @showdivineresult game
+                
+    midnight:(game)->
+        super
+        unless game.rule.divineresult=="immediate"
+            @dodivine game
 	showdivineresult:(game)->
         r=@results[@results.length-1]
         return unless r?
@@ -5812,7 +5825,7 @@ class MentalExaminator extends Diviner
             to:@id
             comment:r.result
         splashlog game.id,game,log
-		
+
 # 処理上便宜的に使用
 class GameMaster extends Player
     type:"GameMaster"
