@@ -5765,8 +5765,8 @@ class Ushinotokimairi extends Madman
         super
 
 class MentalExaminator extends Player
-	type:"MentalExaminator"
-	jobname:"精神鉴定师"
+    type:"MentalExaminator"
+    jobname:"精神鉴定师"
     constructor:->
         super
         @results=[]
@@ -5778,12 +5778,12 @@ class MentalExaminator extends Player
         else if @scapegoat
             # 身代わり君の自動占い
             r=Math.floor Math.random()*game.players.length
-            @job game,game.players[r].id,{}	
-	sleeping:->true
-	job:(game,playerid)->
-		@setTarget playerid
-		pl=game.getPlayer playerid
-		pl.touched game,@id
+            @job game,game.players[r].id,{}    
+    sleeping:->true
+    job:(game,playerid)->
+        @setTarget playerid
+        pl=game.getPlayer playerid
+        pl.touched game,@id
         log=
             mode:"skill"
             to:@id
@@ -5793,18 +5793,18 @@ class MentalExaminator extends Player
             @dodivine game
             @showdivineresult game
         null
-	dodivine:(game)->
-		pl=game.getPlayer @target
-		p=pl
-		if pl?
-			if pl.isJobType "Stalker"
-				unless !pl.flag
-					p=game.getPlayer pl.flag
-			resultstring=if p.team == "Human"
-				"是正常人"
-			else
-				"非常危险"
-			@results.push {
+    dodivine:(game)->
+        pl=game.getPlayer @target
+        p=pl
+        if pl?
+            if pl.isJobType "Stalker"
+                unless !pl.flag
+                    p=game.getPlayer pl.flag
+            resultstring=if p.team == "Human"
+                "是正常人"
+            else
+                "非常危险"
+            @results.push {
                 player: game.getPlayer(@target).publicinfo()
                 result: "根据 #{@name} 的精神鉴定结果，#{pl.name} #{resultstring}。"
             }
@@ -5817,7 +5817,7 @@ class MentalExaminator extends Player
         super
         unless game.rule.divineresult=="immediate"
             @dodivine game
-	showdivineresult:(game)->
+    showdivineresult:(game)->
         r=@results[@results.length-1]
         return unless r?
         log=
@@ -6729,7 +6729,7 @@ jobs=
     Bomber:Bomber
     Blasphemy:Blasphemy
     Ushinotokimairi:Ushinotokimairi
-	MentalExaminator:MentalExaminator
+    MentalExaminator:MentalExaminator
     # 特殊
     GameMaster:GameMaster
     Helper:Helper
@@ -6851,7 +6851,7 @@ jobStrength=
     Bomber:23
     Blasphemy:10
     Ushinotokimairi:19
-	MentalExaminator:65
+    MentalExaminator:65
 
 module.exports.actions=(req,res,ss)->
     req.use 'session'
