@@ -5794,13 +5794,12 @@ class MentalExaminator extends Diviner
         p=pl
         ids=[]
         if pl?
-		    loop
                 if p.isJobType "Stalker"
-				    unless !p.flag
+                    unless !p.flag
                         if p.flag in ids
                             break
                         else
-                            ids=ids concat p.flag
+                            ids=ids.concat p.flag
                             p=game.getPlayer p.flag
                     else
                         break
