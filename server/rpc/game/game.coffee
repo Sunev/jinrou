@@ -5794,6 +5794,7 @@ class MentalExaminator extends Diviner
         p=pl
         ids=[]
         if pl?
+            loop
                 if p.isJobType "Stalker"
                     unless !p.flag
                         if p.flag in ids
