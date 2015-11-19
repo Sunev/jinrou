@@ -5792,10 +5792,20 @@ class MentalExaminator extends Diviner
     dodivine:(game)->
         pl=game.getPlayer @target
         p=pl
+        ids=[]
         if pl?
-            if pl.isJobType "Stalker"
-                unless !pl.flag
-                    p=game.getPlayer pl.flag
+		    loop
+                if p.isJobType "Stalker"
+				    unless !p.flag
+                        if p.flag in ids
+                            break
+                        else
+                            ids=ids concat p.flag
+                            p=game.getPlayer p.flag
+                    else
+                        break
+                else
+                    break
             resultstring=if p.team == "Human"
                 "是正常人"
             else
