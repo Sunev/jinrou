@@ -1,7 +1,7 @@
 section
   h1 月下人狼
   p 一个<strong>实时</strong>的<strong>高自由度</strong>的人狼服务器。<a href="/manual/features">游戏简介</a>
-  h2 登陆
+  h2 登录
   form(aciton="/")#loginform
     label(for="loginform-userid")
       | 账号
@@ -9,9 +9,9 @@ section
     label(for="loginform-password")
       | 密码
     input#loginform-password(type="password",size="25",name="password",pattern="[\\\\x20-\\\\x7e]+",required,autocomplete="current-password")
-    input(type="submit",value="登陆")
+    input(type="submit",value="登录")
     label
-      | 记住登陆状态
+      | 记住登录状态
       input(type="checkbox",name="remember_me",checked)
     p
       a(href="/reset")忘记密码
