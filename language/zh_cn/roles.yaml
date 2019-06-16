@@ -641,7 +641,7 @@ Shishimai:
 
 Pumpkin:
   # Select a pumpkinize target.
-  select: "{{name}} 把 {{target}} 变成了南瓜"
+  select: "{{name}} 把 {{target}} 变成了南瓜。"
 
 MadScientist:
   # Select a revival target.
