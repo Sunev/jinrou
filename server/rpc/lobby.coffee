@@ -71,6 +71,9 @@ exports.actions =(req,res,ss)->
         unless libblacklist.checkPermission "lobby_say", req.session.ban
             res {error: i18n.t "error.say.banned"}
             return
+        unless req.session.user.mail?.verified
+            res {error: i18n.t "error.say.mailNotVerified"}
+            return
         log=
             userid:req.session.userId
             name:req.session.user.name
