@@ -124,7 +124,7 @@ exports.actions =(req,res,ss)->
                 error: i18n.t "error.newentry.banned"
             }
             return
-        unless /^\w+$/.test(query.userid)
+        unless /^\w{5,20}$/.test(query.userid)
             res {
                 login:false
                 error: i18n.t "error.newentry.useridInvalid"

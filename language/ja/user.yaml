@@ -13,7 +13,7 @@ error:
     # Account creation is restricted
     banned: "您的连接受限，不允许创建账号。"
     # User ID is invalid
-    useridInvalid: "ID包含了非法字符。"
+    useridInvalid: "ID包含了非法字符，或者长度超出限制范围（5-20）。"
     # Password is invalid
     passwordInvalid: "密码包含了非法字符。"
     # This user ID is already Used
