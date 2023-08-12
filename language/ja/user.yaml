@@ -15,7 +15,7 @@ error:
     # User ID is invalid
     useridInvalid: "ID包含了非法字符，或者长度超出限制范围（5-20）。"
     # Password is invalid
-    passwordInvalid: "密码包含了非法字符。"
+    passwordInvalid: "密码包含了非法字符，或者长度超出限制范围（5-20）。"
     # This user ID is already Used
     alreadyUsed: "这个ID已被使用。"
 
