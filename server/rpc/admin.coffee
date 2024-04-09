@@ -140,6 +140,33 @@ exports.actions =(req,res,ss)->
         args=cmd.split " "
         comm=args.shift()
         pro= child_process.spawn comm,args
+    #   关闭陈旧房间
+    # 关闭陈旧房间
+    shutdownExpireRooms: ->
+        unless req.session.maintenance
+            res {error: i18n.t "error.notAdmin"}
+            return
+        notFresh = Date.now() - Config.rooms.fresh * 60 * 60 * 1000
+        # 查询满足条件的过期房间
+        M.rooms.find({"mode": {$ne: "end"}, "made": {$lt: notFresh}}).toArray (err, docs) ->
+            if err?
+                res {error: err}
+                return
+            # 遍历过期房间并更新状态
+            ids = docs.map (item)-> return item.id
+            # 关闭房间
+            M.rooms.update({id: {$in: ids}}, {$set: {"mode": "end"}}, {multi: true}, (err) ->
+                if err?
+                    res {error: err}
+                    return
+            )
+            # 更新游戏状态为已结束
+            M.games.update({id: {$in: ids}}, {$set: {"finished": true}}, {multi: true}, (err) ->
+                if err?
+                    res {error: err}
+                    return
+            )
+            res {result: "关闭了 #{docs.length} 个陈旧房间"}
     #-- 更新
     update:->
         unless req.session.maintenance

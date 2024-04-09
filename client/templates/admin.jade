@@ -5,6 +5,7 @@ section.admin#admin
     li(data-opener="blacklist") 黑名单管理
     li(data-opener="grandalert") 全体告知
     li(data-opener="dataexport") 数据库导出
+    li(data-opener="shutdownExpireRooms") 关闭陈旧房间
     li(data-opener="update") 更新
     li(data-opener="news") 通知管理
   section#blacklist(hidden)
@@ -96,6 +97,12 @@ section.admin#admin
         | 命令
         input(name="command",size="100")
       p: input(type="submit",value="取得")
+  section#shutdownExpireRooms(hidden)
+    h1 关闭陈旧房间
+    form#shutdownExpireRoomsForm
+      p: input(type="submit",value="关闭")
+    pre
+      samp#shutdownExpireRoomsResult
   section#update(hidden)
     h1 更新
     form#pullform

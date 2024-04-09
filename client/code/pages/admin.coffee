@@ -56,6 +56,16 @@ tabs=
                             Index.util.message "错误",result.error
                             return
                         window.open result.file
+    shutdownExpireRooms:
+        init:->
+            $("#shutdownExpireRoomsForm").submit (je)->
+                je.preventDefault()
+                ss.rpc "admin.shutdownExpireRooms",(result)->
+                    if result.error
+                        $("#shutdownExpireRoomsResult").get(0).style.color="red"
+                        $("#shutdownExpireRoomsResult").text result.error
+                    else
+                        $("#shutdownExpireRoomsResult").text result.result
     update:
         init:->
             $("#pullform").submit (je)->
