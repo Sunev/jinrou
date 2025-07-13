@@ -234,7 +234,7 @@ module.exports.actions=(req,res,ss)->
             res {error: i18n.t "error.newRoom.banned"}
             return
 
-        M.rooms.find().sort({id:-1}).limit(1).nextObject (err,doc)=>
+        M.rooms.find().sort({id:-1}).limit(1).next().then (doc)->
             id=if doc? then doc.id+1 else 1
             
             #在一定时间间隔内，同一用户不能连续建房
