@@ -167,6 +167,7 @@ module.exports.actions=(req,res,ss)->
                 $unwind: "$room"
             },
         ]).stream()
+        results = []
         stream.on "data", (x)->
             if x.room?
                 if x.room.password?
@@ -179,6 +180,7 @@ module.exports.actions=(req,res,ss)->
                     if p.realid == req.session.userId
                         p.me = true
                     p.realid = undefined
+            results.push x
         stream.on "end", ->
             # ここで結果を返す
             res results
