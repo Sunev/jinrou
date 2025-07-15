@@ -237,13 +237,13 @@ module.exports.actions=(req,res,ss)->
             res {error: i18n.t "error.newRoom.banned"}
             return
 
-        M.rooms.find().sort({id:-1}).limit(1).next().then (doc)->
+        M.rooms.find().sort({id:-1}).limit(1).next().then (doc)=>
             id=if doc? then doc.id+1 else 1
             
             #在一定时间间隔内，同一用户不能连续建房
             minTimeInterval = 60*1000
-            if id>1 and doc.owner.userid==req.session.user.userid
-                if (Date.now()-doc.made)<minTimeInterval
+            if id > 1 and doc.owner.userid==req.session.user.userid
+                if (Date.now()-doc.made) < minTimeInterval
                     res {error: "您在#{((minTimeInterval-(Date.now()-doc.made))/1000).toFixed(0)}秒内不能连续建房。"}
                     return
             room=
@@ -254,13 +254,13 @@ module.exports.actions=(req,res,ss)->
                 players:[]
                 made:Date.now()
                 jobrule:null
-            if room.number>40
+            if room.number > 40
                 res {error: "拒绝40人以上超大房，从你我做起。"}
                 return
-            if room.name.length<1
+            if room.name.length < 1
                 res {error: "请勿使用空格作为房间名。"}
                 return
-            if room.name.length>64
+            if room.name.length > 64
                 res {error: "你是在开车吗？如果不是，请换一个更短的房间名；如果是，本服务器将拨打110。"}
                 return
             room.password=query.password ? null
