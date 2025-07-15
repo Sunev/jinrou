@@ -2882,9 +2882,9 @@ class Game
             # 各々に対して処理
             query={userid:{$in:pls.map (x)->x.realid}}
             stream = M.users.find(query).stream()
-            stream.on "error", (err)->
+            stream.on "error", (err)=>
                 console.error err
-            stream.on "data", (doc)->
+            stream.on "data", (doc)=>
                 oldprize=doc.prize  # いままでの賞の一覧
                 # 差分をとる
                 newprize=obj[doc.userid].filter (x)->!(x in oldprize)
