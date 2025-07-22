@@ -332,7 +332,7 @@ iconSelect:
   # title of icon select dialog.
   title: '头像选择'
   # message for icon select dialog.
-  message: '直接输入图片的URL，或者输入Twitter账号获取Twitter头像。'
+  message: '直接输入图片的URL。'
   # button for no icon.
   no: '取消'
   # save button.

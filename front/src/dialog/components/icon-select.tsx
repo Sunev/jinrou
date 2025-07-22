@@ -35,7 +35,7 @@ export class IconSelectDialog extends React.PureComponent<
   private twitterRef = React.createRef<HTMLInputElement>();
   state = {
     urlDisabled: false,
-    twitterDisabled: false,
+    twitterDisabled: true,
     requesting: false,
   };
   public render() {
@@ -76,7 +76,7 @@ export class IconSelectDialog extends React.PureComponent<
                         />
                       </td>
                     </tr>
-                    <tr>
+                    <tr style={twitterDisabled ? { display: 'none' } : {}}>
                       <th>{t('iconSelect.twitter')}</th>
                       <td>
                         <FormInput
