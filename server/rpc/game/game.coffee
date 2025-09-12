@@ -4738,6 +4738,19 @@ class Fanatic extends Madman
         # 狂信者は人狼が分かる
         res.wolves = true
         res
+
+class HearMadman extends Fanatic
+    type:"HearMadman"
+    getVisibilityQuery:->
+        res = super
+        # 聽狂人は人狼を聞くことができる
+        res.wolves = true
+        res
+    isListener:(game,log)->
+        if log.mode=="werewolf"
+            true
+        else super
+
 class Immoral extends Player
     type:"Immoral"
     team:"Fox"
@@ -5554,6 +5567,30 @@ class Tanner extends Player
             # 突然死はダメ
             @setFlag "gone"
     isWinner:(game,team)->@dead && @flag!="gone"
+
+    class Teruteru extends Player
+    type:"Teruteru"
+    team:""
+    checkDeathResistance:(game, found)->
+        if found=="punish" && !@flag?
+            # 処刑された
+            if @target==true
+                @setFlag "win"
+            return false
+        else
+            return false
+    isWinner:(game,team)->@dead && @flag=="win"
+    sunrise:(game)->
+        if ((game.players.length <= 4 && game.day == 2) || (game.players.length <= 6 && game.day == 3) || (game.players.length <= 10 && game.day == 4)  || (game.day >= 5)) && @target!=true
+            @setTarget true
+            log=
+                mode: "skill"
+                to: @id
+                comment: game.i18n.t "roles:Teruteru.announce", {
+                    name: @name,
+                }
+            splashlog game.id, game, log
+
 class OccultMania extends Player
     type:"OccultMania"
     midnightSort:102
@@ -13862,6 +13899,7 @@ jobs=
     Copier:Copier
     Light:Light
     Fanatic:Fanatic
+    HearMadman:HearMadman
     Immoral:Immoral
     Devil:Devil
     ToughGuy:ToughGuy
@@ -13884,6 +13922,7 @@ jobs=
     Witch:Witch
     Oldman:Oldman
     Tanner:Tanner
+    Teruteru:Teruteru
     OccultMania:OccultMania
     MinionSelector:MinionSelector
     WolfCub:WolfCub
@@ -14119,6 +14158,7 @@ jobStrength=
     Copier:10
     Light:30
     Fanatic:20
+    HearMadman:25
     Immoral:5
     Devil:20
     ToughGuy:11
@@ -14141,6 +14181,7 @@ jobStrength=
     Witch:23
     Oldman:4
     Tanner:15
+    Teruteru:15
     OccultMania:10
     MinionSelector:0
     WolfCub:70
