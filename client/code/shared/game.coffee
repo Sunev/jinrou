@@ -9,8 +9,8 @@ exports.jobs=["Human","Werewolf","Diviner","Psychic","Madman","Guard","Couple","
 # ミラーズホロウの人狼
 "Hunter","Cupid",
 # 特殊役職?
-"Poisoner","BigWolf","TinyFox","Cat","Teruteru",
-# るる鯖で見つけた职业
+"Poisoner","BigWolf","TinyFox","Cat",
+# るる鯖で見つけた役職
 "Fanatic","HearMadman","Immoral"
 # 特殊役職2
 "Devil","Stalker","WhisperingMad","Dog",
@@ -77,7 +77,7 @@ exports.jobs=["Human","Werewolf","Diviner","Psychic","Madman","Guard","Couple","
 # 人狼HOUSE
 "Hypnotist",
 # 人狼ジャッジメント
-"BlackCat","Amanojaku","HouseKeeper","Itako",
+"BlackCat","Amanojaku","HouseKeeper","Itako","Teruteru",
 # 人狼はウソ月
 "BloodWolf","AttractiveWoman",
 # 人狼 SUPER DX（幻冬舎）
