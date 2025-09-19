@@ -2882,7 +2882,7 @@ class Game
             # 各々に対して処理
             query={userid:{$in:pls.map (x)->x.realid}}
             stream = M.users.find(query).stream()
-            stream.on "error", (err)=>
+            stream.on "error", (err)->
                 console.error err
             stream.on "data", (doc)=>
                 oldprize=doc.prize  # いままでの賞の一覧
@@ -4743,7 +4743,7 @@ class HearMadman extends Fanatic
     type:"HearMadman"
     getVisibilityQuery:->
         res = super
-        # 聽狂人は人狼を聞くことができる
+        # 聴狂人は人狼を聞くことができる
         res.wolves = true
         res
     isListener:(game,log)->
