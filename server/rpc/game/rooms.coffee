@@ -98,6 +98,10 @@ module.exports.actions=(req,res,ss)->
     req.use 'user.fire.wall'
     req.use 'session'
 
+    # getRooms 方法 - 使用传统的 skip 分页（用于 rooms、rooms/old、rooms/log）
+    # 参数说明：
+    # - mode: 房間模式 (log/old/new)，不包含 my
+    # - page: 页码
     getRooms:(mode,page)->
         if mode=="log"
             query=
@@ -142,31 +146,68 @@ module.exports.actions=(req,res,ss)->
                     unless theme == null
                         x.themeFullName = theme.name
             res results
-    getMyRooms:(page)->
-        # extract user's play logs from userrawlogs
-        stream = M.userrawlogs.aggregate([
+    
+    # getMyRooms 方法 - 使用游标分页（独立实现，仅用于 rooms/my）
+    # 参数说明：
+    # - page: 页码（向后兼容，可选）
+    # - cursor: 游标字符串 "roomid_direction" 或 null
+    getMyRooms:(page, cursor)->
+        # 解析游标参数
+        roomid = null
+        direction = 'next'
+        if cursor?
+            parts = cursor.split('_')
+            roomid = parseInt(parts[0])
+            direction = if parts.length > 1 then parts[1] else 'next'
+        
+        # 构建聚合管道
+        pipeline = [
             {
                 $match:
                     userid: req.session.userId
                     type: libuserlogs.DataTypes.game
-            }, {
-                $sort:
-                    gameid: -1
-            }, {
-                $skip: page * page_number
-            }, {
-                $limit: page_number
-            }, {
-            # join with room object
-                $lookup:
-                    from: "rooms"
-                    localField: "gameid"
-                    foreignField: "id"
-                    as: "room"
-            }, {
-                $unwind: "$room"
-            },
-        ]).stream()
+            }
+        ]
+        
+        # 根据游标添加过滤条件
+        # 排序永远是降序（gameid: -1），最新的在前
+        if roomid?
+            if direction == 'next'
+                # 下一页：查找比当前游标更小の gameid（向旧的方向）
+                pipeline.push {
+                    $match:
+                        gameid: {$lt: roomid}
+                }
+            else
+                # 上一页：查找比当前游标更大的 gameid（向新的方向）
+                pipeline.push {
+                    $match:
+                        gameid: {$gt: roomid}
+                }
+        
+        # 始終使用降序排序
+        pipeline.push {
+            $sort:
+                gameid: -1
+        }
+        
+        # 限制数量
+        pipeline.push {
+            $limit: page_number
+        }
+        
+        # join with room object
+        pipeline.push {
+            $lookup:
+                from: "rooms"
+                localField: "gameid"
+                foreignField: "id"
+                as: "room"
+        }, {
+            $unwind: "$room"
+        }
+        
+        stream = M.userrawlogs.aggregate(pipeline).stream()
         results = []
         stream.on "data", (x)->
             if x.room?
@@ -761,13 +802,16 @@ module.exports.actions=(req,res,ss)->
                     res null
                     Server.game.game.deletedlog ss,room
 
-    # 部屋探し
-    find:(query,page)->
+    # 部屋探し（支持游标分页）
+    # 参数说明：
+    # - query: 查询条件对象
+    # - page: 页码（向后兼容，可选）
+    # - cursor: 游标字符串 "gameid_direction" 或 null（新方式）
+    find:(query, page, cursor)->
         unless query?
             res {error: i18n.t "common:error.invalidInput"}
             return
-        res {error: i18n.t "error.find.disabled"}
-        return
+        
         q=
             finished:true
         if query.result_team
@@ -787,13 +831,32 @@ module.exports.actions=(req,res,ss)->
             q.day["$lte"]=query.max_day
         if query.rule
             q["rule.jobrule"]=query.rule
+        
+        # 解析游标参数
+        gameid = null
+        direction = 'next'
+        if cursor?
+            parts = cursor.split('_')
+            gameid = parseInt(parts[0])
+            direction = if parts.length > 1 then parts[1] else 'next'
+        
+        # 根据游标构建查询
+        # 排序永远是降序（id: -1），最新的在前
+        if gameid?
+            if direction == 'next'
+                # 下一页：查找比当前游标更小のID（向旧的方向）
+                q.id = {$lt: gameid}
+            else
+                # 上一页：查找比当前游标更大的ID（向新的方向）
+                q.id = {$gt: gameid}
+            
         # 日付新しい
-        M.games.find(q).sort({_id:-1}).limit(page_number).skip(page_number*page).toArray (err,results)->
+        M.games.find(q).sort({id: -1}).limit(page_number).toArray (err,results)->
             if err?
                 throw err
                 return
             # gameを得たのでroomsに
-            M.rooms.find({id:{$in: results.map((x)->x.id)}}).sort({_id:-1}).toArray (err,docs)->
+            M.rooms.find({id:{$in: results.map((x)->x.id)}}).sort({id: -1}).toArray (err,docs)->
                 docs.forEach (x)->
                     if x.password?
                         x.needpassword=true
@@ -805,6 +868,20 @@ module.exports.actions=(req,res,ss)->
                                 console.log "room fatal error ID:"+x.id
                                 return
                             delete p.realid
+                
+                # 将 games 数据作为 gameinfo 附加到 rooms 上
+                gameMap = {}
+                for game in results
+                    gameMap[game.id] = game
+                
+                for room in docs
+                    game = gameMap[room.id]
+                    if game?
+                        room.gameinfo =
+                            winner: game.winner
+                            rule: game.rule
+                            day: game.day
+                
                 res docs
     suddenDeathPunish:(roomid,banIDs)->
         # banIDs = ["someID","someID"]

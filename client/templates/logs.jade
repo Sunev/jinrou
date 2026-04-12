@@ -3,29 +3,20 @@ section.lobby
   form#logsform
     fieldset
       legend 条件
-      fieldset
+      fieldset(style="display:none")
         legend 人数
         p
-          input(name="min_number_on",type="checkbox")
+          input(name="min_number_on",type="checkbox",disabled)
           input(name="min_number",type="number",value="3",disabled)
           | 人以上
         p
-          input(name="max_number_on",type="checkbox")
+          input(name="max_number_on",type="checkbox",disabled)
           input(name="max_number",type="number",value="17",disabled)
           | 人以下
       p
         input(name="result_team_on",type="checkbox")
-        | 胜利阵营
-        select(name="result_team",disabled)
-          option(value="Human") 村人
-          option(value="Werewolf") 人狼
-          option(value="Fox") 妖狐
-          option(value="Devil") 恶魔
-          option(value="Friend") 恋人
-          option(value="Cult") 教会
-          option(value="Vampire") 吸血鬼
-          option(value="LoneWolf") 一匹狼
-          option(value="Draw") 平局
+        | 获胜者
+        select(name="result_team",disabled)#winnerbox
       fieldset
         legend 结束前的天数
         p
@@ -42,8 +33,7 @@ section.lobby
           input(name="rule_on",type="checkbox")
           select(name="rule",disabled)#rulebox
        
-    p: input(type="submit",value="检索",disabled)
-    p 非常抱歉，历史检索对服务器压力过大，目前无法使用。
+    p: input(type="submit",value="检索")
       
   form#pager
     p
@@ -52,11 +42,13 @@ section.lobby
   table.roomstable
     thead
       tr
+        th 房间号
         th 房间名
-        th 状态
         th 房主
-        th 最大人数
-        th 日時
-        th 简介
+        th 人数
+        th 创建时间
+        th 获胜者
+        th 规则
+        th 天数
     tbody#roomlist
 

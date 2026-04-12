@@ -6,6 +6,8 @@ description: "实时聊天·高自由度的人狼服务器。有100种以上的�
 mypage: "个人页面"
 # name of lobby.
 lobby: "休息室"
+# logs page.
+logs: "历史检索"
 # rooms page.
 rooms: "房间一览"
 # manual page.
