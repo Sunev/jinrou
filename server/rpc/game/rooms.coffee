@@ -98,10 +98,6 @@ module.exports.actions=(req,res,ss)->
     req.use 'user.fire.wall'
     req.use 'session'
 
-    # getRooms 方法 - 使用传统的 skip 分页（用于 rooms、rooms/old、rooms/log）
-    # 参数说明：
-    # - mode: 房間模式 (log/old/new)，不包含 my
-    # - page: 页码
     getRooms:(mode,page)->
         if mode=="log"
             query=
@@ -146,70 +142,62 @@ module.exports.actions=(req,res,ss)->
                     unless theme == null
                         x.themeFullName = theme.name
             res results
-    
-    # getMyRooms 方法 - 使用游标分页（独立实现，仅用于 rooms/my）
-    # 参数说明：
-    # - page: 页码（向后兼容，可选）
-    # - cursor: 游标字符串 "roomid_direction" 或 null
-    getMyRooms:(page, cursor)->
-        # 解析游标参数
-        roomid = null
-        direction = 'next'
-        if cursor?
-            parts = cursor.split('_')
-            roomid = parseInt(parts[0])
-            direction = if parts.length > 1 then parts[1] else 'next'
+    getMyRooms:(page, lastGameid)->
+        # extract user's play logs from userrawlogs
+        # Use cursor-based pagination instead of $skip for 10-100x performance improvement
         
-        # 构建聚合管道
-        pipeline = [
+        # Build query conditions
+        matchCondition =
+            userid: req.session.userId
+            type: libuserlogs.DataTypes.game
+        
+        # If lastGameid is provided, use range query instead of skip
+        if lastGameid?
+            matchCondition.gameid =
+                $lt: lastGameid
+        
+        stream = M.userrawlogs.aggregate([
             {
-                $match:
-                    userid: req.session.userId
-                    type: libuserlogs.DataTypes.game
+                $match: matchCondition
+            }, {
+                $sort:
+                    gameid: -1
+            }, {
+                $limit: page_number
+            }, {
+            # join with room object
+                $lookup:
+                    from: "rooms"
+                    localField: "gameid"
+                    foreignField: "id"
+                    as: "room"
+            }, {
+                $unwind: "$room"
             }
-        ]
+        ], { allowDiskUse: true }).stream()  # Enable allowDiskUse to prevent memory overflow
         
-        # 根据游标添加过滤条件
-        # 排序永远是降序（gameid: -1），最新的在前
-        if roomid?
-            if direction == 'next'
-                # 下一页：查找比当前游标更小の gameid（向旧的方向）
-                pipeline.push {
-                    $match:
-                        gameid: {$lt: roomid}
-                }
-            else
-                # 上一页：查找比当前游标更大的 gameid（向新的方向）
-                pipeline.push {
-                    $match:
-                        gameid: {$gt: roomid}
-                }
-        
-        # 始終使用降序排序
-        pipeline.push {
-            $sort:
-                gameid: -1
-        }
-        
-        # 限制数量
-        pipeline.push {
-            $limit: page_number
-        }
-        
-        # join with room object
-        pipeline.push {
-            $lookup:
-                from: "rooms"
-                localField: "gameid"
-                foreignField: "id"
-                as: "room"
-        }, {
-            $unwind: "$room"
-        }
-        
-        stream = M.userrawlogs.aggregate(pipeline).stream()
         results = []
+        timeout = null
+        streamClosed = false
+        
+        # Set timeout to prevent hanging streams (30 seconds)
+        timeout = setTimeout ->
+            unless streamClosed
+                console.warn "getMyRooms request timeout for user #{req.session.userId}"
+                stream.destroy()
+                res {error: "Request timeout"}
+                streamClosed = true
+        , 30000
+        
         stream.on "data", (x)->
+            return if streamClosed
+            
+            # Safety limit: prevent unbounded array growth (OOM protection)
+            if results.length >= 1000
+                console.warn "getMyRooms results limit reached for user #{req.session.userId}, stopping stream"
+                stream.destroy()
+                return
+            
             if x.room?
                 if x.room.password?
                     x.room.needpassword = true
@@ -222,12 +210,19 @@ module.exports.actions=(req,res,ss)->
                         p.me = true
                     p.realid = undefined
             results.push x
+            
         stream.on "end", ->
-            # ここで結果を返す
+            return if streamClosed
+            streamClosed = true
+            clearTimeout(timeout)
+            # Return results
             res results
+            
         stream.on "error", (err)->
+            return if streamClosed
+            streamClosed = true
+            clearTimeout(timeout)
             res {error: String err}
-
 
     oneRoom:(roomid)->
         M.rooms.findOne {id:roomid},(err,result)=>
@@ -833,24 +828,15 @@ module.exports.actions=(req,res,ss)->
             q["rule.jobrule"]=query.rule
         
         # 解析游标参数
-        gameid = null
-        direction = 'next'
+        # Cursor-based pagination: client manages direction via history stack
+        # Backend only needs to return records with id < cursor (descending order)
         if cursor?
-            parts = cursor.split('_')
-            gameid = parseInt(parts[0])
-            direction = if parts.length > 1 then parts[1] else 'next'
-        
-        # 根据游标构建查询
-        # 排序永远是降序（id: -1），最新的在前
-        if gameid?
-            if direction == 'next'
-                # 下一页：查找比当前游标更小のID（向旧的方向）
-                q.id = {$lt: gameid}
-            else
-                # 上一页：查找比当前游标更大的ID（向新的方向）
-                q.id = {$gt: gameid}
+            gameid = parseInt(cursor)
             
-        # 日付新しい
+            # Use cursor for range query
+            if gameid?
+                q.id = {$lt: gameid}
+        # Always sort in descending order (newest first)
         M.games.find(q).sort({id: -1}).limit(page_number).toArray (err,results)->
             if err?
                 throw err

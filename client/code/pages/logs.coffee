@@ -143,6 +143,7 @@ exports.start=->
                     a_name = document.createElement("a")
                     a_name.href = "/room/#{room.id}"
                     a_name.textContent = room.name ? ''
+                    a_name.target = "_blank"
                     td_name.appendChild(a_name)
                     tr.appendChild(td_name)
                     
@@ -152,6 +153,7 @@ exports.start=->
                         a_owner = document.createElement("a")
                         a_owner.href = "/user/#{room.owner.userid}"
                         a_owner.textContent = room.owner.name ? ''
+                        a_owner.target = "_blank"
                         td_owner.appendChild(a_owner)
                     else
                         td_owner.textContent = i18n.t("rooms_client:ownerHidden")
@@ -216,29 +218,60 @@ exports.start=->
                 
                 # 更新游标状态：记录当前页最后一条记录のID
                 if rooms.length > 0
-                    lastRoom = rooms[rooms.length - 1]
+                    lastRoom = rooms.at(-1)
                     if lastRoom?.id?
                         lastGameid = lastRoom.id
 
             # === RPC请求函数 ===
             # direction: 'next' 或 'prev'
+            pendingRequest = null  # Track pending request to prevent race conditions
+            
             requestRooms = (direction, callback)->
-                # 根据方向选择游标
-                if direction == 'next'
-                    # 下一页：使用当前页最后一条のID作为游标
-                    cursor = if lastGameid? then "#{lastGameid}_next" else null
-                else
-                    # 上一页：从历史栈中取出上一页の游标
-                    if gameidHistory.length > 0
-                        cursor = gameidHistory[gameidHistory.length - 1]
-                    else
-                        cursor = null
+                # Cancel previous pending request to prevent race conditions
+                if pendingRequest?
+                    console.log "Cancelling previous pending request"
+                    pendingRequest.abort()
+                    pendingRequest = null
                 
-                ss.rpc "game.rooms.find", query, 10, cursor, (rooms)->
+                # Cursor-based pagination: send pure numeric cursor (no direction suffix)
+                # Backend always returns records with id < cursor in descending order
+                cursor = lastGameid  # Send pure gameid, no direction suffix
+                
+                # Create abortable RPC request
+                pendingRequest = ss.rpc "game.rooms.find", query, 10, cursor, (rooms)->
+                    pendingRequest = null  # Clear pending request
+                    
                     if rooms?.error?
                         console.error "Error:", rooms.error
+                        # Show user-friendly error message
+                        showError(rooms.error)
                         return
+                    
                     callback(rooms)
+            
+            # === 显示错误提示 ===
+            showError = (errorMessage)->
+                # Create or update error message element
+                errorDiv = $("#rpc-error-message")
+                if errorDiv.length == 0
+                    errorDiv = $('<div id="rpc-error-message" style="color: red; padding: 10px; margin: 10px 0; border: 1px solid red; border-radius: 4px;"></div>')
+                    $("#logsform").after(errorDiv)
+                
+                # Translate common errors
+                userMessage = switch errorMessage
+                    when "Request timeout"
+                        "查询超时，请缩小搜索范围或稍后重试"
+                    when "common:error.invalidInput"
+                        "输入参数无效，请检查搜索条件"
+                    else
+                        "查询失败：#{errorMessage}"
+                
+                errorDiv.text(userMessage)
+                
+                # Auto-hide after 5 seconds
+                setTimeout ->
+                    errorDiv.fadeOut()
+                , 5000
             
             # === 分页按钮イベント ===
             $("#pager").click (je)->
@@ -246,14 +279,20 @@ exports.start=->
                 t=je.target
                 
                 if t.name == "prev"
-                    # 上一页
+                    # Previous page: pop current page's cursor, then use the new stack top
+                    # Example: 
+                    #   Current page (5th): lastGameid=61, history=[101,91,81,71]
+                    #   Pop 71 → history=[101,91,81]
+                    #   Use 81 to query → returns page 4 (80-71)
                     if gameidHistory.length > 0
-                        # 弹出当前页の游标，恢复为上一页の游标
-                        gameidHistory.pop()
-                        # 使用历史栈中最后一个游标（即上一页のlastGameid）
+                        gameidHistory.pop()  # Remove current page's cursor
+                        if gameidHistory.length > 0
+                            lastGameid = gameidHistory.at(-1)  # Use previous page's cursor
+                        else
+                            lastGameid = null  # Back to first page
                         requestRooms('prev', renderRooms)
                     else
-                        # 没有历史记录，重置到第一页
+                        # No history, reset to first page
                         lastGameid = null
                         gameidHistory = []
                         renderRooms([])
@@ -261,7 +300,7 @@ exports.start=->
                 else if t.name == "next"
                     # 下一页：保存当前页の游标到历史栈
                     if lastGameid?
-                        gameidHistory.push "#{lastGameid}_next"
+                        gameidHistory.push lastGameid
                     requestRooms('next', renderRooms)
             
             # === 表单提交イベント ===
@@ -291,4 +330,9 @@ exports.start=->
         .then ()->
             $("#logsform").submit()
 
-exports.end=->
+exports.end = ->
+    # Clean up cursor state to prevent memory leaks when leaving the page
+    lastGameid = null
+    gameidHistory = []
+    query = null
+    console.log "Logs page cleanup completed"

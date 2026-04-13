@@ -74,7 +74,7 @@ dbinit= (loaded)->
 
         M.userrawlogs=DB.collection "userrawlogs"
         userrawlogs1 = M.userrawlogs.createIndex({"userid": 1, "type": 1, "subtype": 1, "timestamp": 1})
-        userrawlogs2 = M.userrawlogs.createIndex({"userid": 1, "type": 1, "gameid": 1}, {unique: true})
+        userrawlogs2 = M.userrawlogs.createIndex({"userid": 1, "type": 1, "gameid": -1}, {unique: true})
         userrawlogs3 = M.userrawlogs.createIndex({"userid": 1, "timestamp": 1, "type": 1, "subtype": 1})
         Promise.all([userrawlogs1, userrawlogs2, userrawlogs3]).then (results)->
           # console.log "Userrawlogs collection indexes created"
