@@ -59,7 +59,7 @@ saveInLogs = (log)->
                     resolve col
         }
 
-    logCollection.coll.then((col) -> col.insert log)
+    logCollection.coll.then((col) -> col.insertOne log)
 
 
 # speak in room log

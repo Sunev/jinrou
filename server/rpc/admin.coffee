@@ -155,13 +155,13 @@ exports.actions =(req,res,ss)->
             # 遍历过期房间并更新状态
             ids = docs.map (item)-> return item.id
             # 关闭房间
-            M.rooms.update({id: {$in: ids}}, {$set: {"mode": "end"}}, {multi: true}, (err) ->
+            M.rooms.updateMany({id: {$in: ids}}, {$set: {"mode": "end"}}, (err, result) ->
                 if err?
                     res {error: err}
                     return
             )
             # 更新游戏状态为已结束
-            M.games.update({id: {$in: ids}}, {$set: {"finished": true}}, {multi: true}, (err) ->
+            M.games.updateMany({id: {$in: ids}}, {$set: {"finished": true}}, (err, result) ->
                 if err?
                     res {error: err}
                     return
@@ -215,7 +215,7 @@ exports.actions =(req,res,ss)->
             message:query.message
         M.news.findOne {message:addquery.message},(err,doc)->
             unless doc?
-                M.news.insert addquery,{safe:true},(err,doc)->
+                M.news.insertOne addquery,{safe:true},(err,doc)->
                     res null
 
-pro=null    # 现在のプロセス
+pro=null    # 現在のプロセス

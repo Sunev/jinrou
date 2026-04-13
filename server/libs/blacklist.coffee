@@ -277,7 +277,7 @@ exports.handleBanRequest = (banid, userid, ip, cb)->
                 types: BANTYPES
                 reason: "Ban Request"
             }
-            M.blacklist.insert newdoc, {w: 1}, (err)->
+            M.blacklist.insertOne newdoc, {w: 1}, (err, result)->
                 if err?
                     cb {error: err}
                 else

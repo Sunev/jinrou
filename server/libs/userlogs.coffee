@@ -79,12 +79,16 @@ exports.addGameLogs = (game, cb)->
                     timestamp: timestamp
                 logs.push log
 
-    M.userrawlogs.insert logs, {w: 1}, (err)->
-        if cb?
-            if err?
-                cb err
-            else
-                cb null
+    # Use insertMany for batch insertion of logs
+    if logs.length > 0
+        M.userrawlogs.insertMany logs, {w: 1}, (err)->
+            if cb?
+                if err?
+                    cb err
+                else
+                    cb null
+    else if cb?
+        cb null
 
 # ユーザーのサマリーを取得
 exports.getUserSummary = getUserSummary = (userid, cb)->
@@ -193,7 +197,7 @@ exports.getUserSummary = getUserSummary = (userid, cb)->
             return
         stream.on "end", ()->
             # 集計終了
-            M.usersummary.insert result, (err)->
+            M.usersummary.insertOne result, (err)->
                 if err?
                     cb err, null
                 else

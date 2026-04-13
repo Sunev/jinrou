@@ -79,7 +79,7 @@ exports.actions =(req,res,ss)->
             name:req.session.user.name
             comment:comment
             time:Date.now()
-        M.lobby.insert log
+        M.lobby.insertOne log
         ss.publish.channel "lobby","log",log
         res null
 
