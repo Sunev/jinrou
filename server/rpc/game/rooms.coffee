@@ -806,7 +806,8 @@ module.exports.actions=(req,res,ss)->
         unless query?
             res {error: i18n.t "common:error.invalidInput"}
             return
-        
+        res {error: i18n.t "error.find.disabled"}
+        return        
         q=
             finished:true
         if query.result_team
