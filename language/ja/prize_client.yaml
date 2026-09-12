@@ -43,3 +43,62 @@ save:
   # reminder to save
   reminder: "请点击「保存头衔」来使变更生效。"
 
+# prize status (称号图鉴)
+status:
+  # title of the status section
+  title: "称号图鉴（获得条件与进度）"
+  # label of open button of the status section
+  openLabel: "查看称号条件与进度"
+  # label of close button of the status section
+  closeLabel: "收起称号图鉴"
+  # description of the status section
+  description: "这里显示所有可获得称号的达成条件与当前进度。胜负次数称号按「职业阵营 → 职业 → 胜利/败北」分组，特殊称号按种类分组；点击各级分类可以展开查看。"
+  # titles of series
+  series:
+    winlose: "胜负次数称号"
+    winteamcount: "阵营胜利称号"
+    counter: "特殊称号（计数）"
+    ownprizes: "称号收藏数"
+  # labels of win / lose subsections inside a job group
+  winTitle: "胜利称号"
+  loseTitle: "败北称号"
+  # label of the group of "all jobs"
+  jobAll: "全职业"
+  # achieved / not achieved
+  achieved: "已获得"
+  notAchieved: "未获得"
+  # progress text
+  progress: "{{current}}/{{required}}"
+  # count summary of a series or a group
+  groupCount: "已获得 {{achieved}}/{{total}}"
+  # condition texts
+  condition:
+    wincount: "作为「{{job}}」胜利 {{count}} 次"
+    wincountAll: "胜利 {{count}} 次（全职业合计）"
+    losecount: "作为「{{job}}」败北 {{count}} 次"
+    losecountAll: "败北 {{count}} 次（全职业合计）"
+    winteamcount: "阵营「{{team}}」胜利 {{count}} 次"
+    counter: "{{description}} {{count}} 次"
+    ownprizes: "获得 {{count}} 个称号"
+  # descriptions of counter prizes
+  counterDescription:
+    cursekill: "咒杀对手"
+    divineblack2: "第1天夜里占卜到狼（初日黑）"
+    GJ: "护卫成功（获得GJ判定）"
+    lovers_wincount: "以恋人身份胜利"
+    lovers_losecount: "以恋人身份败北"
+    getkits_merchant: "收到商品"
+    sendkits_to_wolves: "向狼阵营送出商品"
+    nocopy: "游戏结束时作为模仿者还未改变职业"
+    day2hanged: "第2天白天被吊死"
+    allgamecount: "参加游戏"
+    aliveatlast: "游戏结束时存活"
+    revive: "复活"
+    brainwashed: "被洗脑成为信徒"
+    shishimaibit: "被狮子舞咬"
+    happychinesenewyear: "在2017年春节（1月28日）游玩"
+    happychinesenewyear2018: "在2018年春节期间（1月16日～1月22日）游玩"
+    happychinesenewyear2019: "在2019年春节期间（1月5日～1月20日）游玩"
+    happychinesenewyear2020: "在2020年春节期间（1月24日～2月8日）游玩"
+    happychinesenewyear2022: "在2022年春节期间（1月31日～2月15日）游玩"
+
