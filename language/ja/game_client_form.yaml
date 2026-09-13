@@ -35,6 +35,7 @@ messages:
   Diviner: '请选择要占卜的对象'
   TinyFox: '请选择要占卜的对象'
   Guard: '请选择要护卫的对象'
+  OldGuard: '请选择要护卫的对象'
   Magician: '请选择要复活的对象'
   Spy: '准备今晚离开村子的时候请选择'
   Fugitive: '请选择要逃亡到谁家里'
