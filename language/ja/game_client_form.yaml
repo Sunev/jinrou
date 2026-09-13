@@ -134,6 +134,7 @@ messages:
   HouseKeeper: '请选择打理家务的客户'
   RainyBoy: '请在准备下雨的时候选择'
   Itako: '请在准备倾听死者声音的时候选择'
+  FoxMatchmaker: '请依次选择两名恋人'
 
   # Message for normal selection form of special subjobs.  normalMessage:
   SpaceWerewolfObserver: '请选择要观察的对象'
