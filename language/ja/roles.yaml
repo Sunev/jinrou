@@ -5,6 +5,7 @@ jobname:
   Human: '村人'
   Werewolf: '人狼'
   Diviner: '占卜师'
+  MumouDiviner: '无谋的占卜师'
   Psychic: '灵能者'
   Madman: '狂人'
   Guard: '猎人'
