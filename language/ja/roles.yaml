@@ -33,6 +33,7 @@ jobname:
   Immoral: '背德者'
   Devil: '恶魔'
   ToughGuy: '硬汉'
+  Elder: '长老'
   Cupid: '丘比特'
   Stalker: '跟踪狂'
   Cursed: '被诅咒者'
@@ -388,6 +389,10 @@ Priest:
   # Selected a target.
   select: '{{name}} 以神圣的力量守护了 {{target}}。'
   protected: '{{name}} 凭借神圣的力量抵抗了 {{found}}。'
+
+# Elder
+Elder:
+  attackerNotice: '被袭击的 {{target}} 是长老。'
 
 # Prince
 Prince:
