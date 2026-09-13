@@ -11,6 +11,7 @@ formType:
 
 # Name forms which is a little special.
 specialName:
+  SuperFox: 'SP妖狐的能力'
   _day: '处刑投票'
   _Werewolf: '人狼的袭击'
   Dog1: '犬的能力'
@@ -28,6 +29,7 @@ specialName:
 
 # Message for normal selection form.  normalMessage:
 messages:
+  SuperFox: '请选择要诅咒的对象'
   _day: '请投票选择要处刑的对象'
   Waiting: '请选择希望就职的职业'
   WolfDiviner: '请选择要占卜的对象'
