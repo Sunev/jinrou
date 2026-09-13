@@ -32,6 +32,7 @@ messages:
   Waiting: '请选择希望就职的职业'
   WolfDiviner: '请选择要占卜的对象'
   GreedyWolf: '在希望满足自身贪欲的场合下请选择'
+  SuperWerewolf: '在想要发动SP能力，额外袭击1人的情况下请选择'
   Diviner: '请选择要占卜的对象'
   TinyFox: '请选择要占卜的对象'
   Guard: '请选择要护卫的对象'
