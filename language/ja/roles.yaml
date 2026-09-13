@@ -73,6 +73,7 @@ jobname:
   FascinatingWolf: '魅惑的女狼'
   SolitudeWolf: '孤独的狼'
   ToughWolf: '硬汉人狼'
+  LastStandWolf: '绝地人狼'
   ThreateningWolf: '威吓的狼'
   HolyMarked: '圣痕者'
   WanderingGuard: '游荡猎人'
@@ -546,6 +547,8 @@ SolitudeWolf:
 ToughWolf:
   # Select a tough attack
   select: '{{name}} 抱着舍身的觉悟袭击了 {{target}}。'
+LastStandWolf:
+  select: '{{name}} 发动了绝地袭击，目标是 {{target}}。'
 # ThreateningWolf
 ThreateningWolf:
   # Select a threatening.
