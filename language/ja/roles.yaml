@@ -22,6 +22,7 @@ jobname:
   Fugitive: '逃亡者'
   Merchant: '商人'
   QueenSpectator: '女王观战者'
+  Princess: '公主'
   MadWolf: '狂人狼'
   Neet: 'NEET'
   Liar: '骗子'
@@ -325,6 +326,10 @@ Merchant:
   select: '{{name}} 向 {{target}} 寄出了 {{kit}}。'
   # A kit is delivered to a player.
   delivered: '{{name}} 收到了礼物 {{kit}}。'
+
+# Princess
+Princess:
+  inherit: '{{name}} 继承了女王观战者的身份。'
 
 # Liar
 Liar:

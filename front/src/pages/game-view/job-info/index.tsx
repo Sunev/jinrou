@@ -30,6 +30,7 @@ const peers: Array<keyof RolePeersInfo> = allElements<keyof RolePeersInfo>()([
   'foxes',
   'nobles',
   'queens',
+  'princesses',
   'spy2s',
   'friends',
   'cultmembers',

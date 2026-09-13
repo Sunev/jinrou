@@ -87,6 +87,7 @@ jobinfo:
     foxes: '同伴的妖狐是 {{names}}'
     nobles: '贵族是 {{names}}'
     queens: '女王观战者是 {{names}}'
+    princesses: '公主是 {{names}}'
     spy2s: '间谍Ⅱ是 {{names}}'
     friends: '恋人是 {{names}}'
     cultmembers: '教会信者是 {{names}}'
