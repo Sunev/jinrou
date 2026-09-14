@@ -193,6 +193,7 @@ jobname:
   ResidualHaunting: '地缚灵'
   HouseKeeper: '保姆'
   RainyBoy: '雨男'
+  WerewolfDescendant: '人狼的末裔'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
 
@@ -1107,6 +1108,9 @@ HouseKeeper:
 RainyBoy:
   select: '{{name}} 决定明天会下雨。'
   weather: '今天下雨了。'
+
+WerewolfDescendant:
+  transform: '{{name}} 作为人狼的末裔觉醒，转化为了人狼。'
 
 Itako:
   select: '{{name}} 侧耳倾听了 {{target}} 的声音。'
