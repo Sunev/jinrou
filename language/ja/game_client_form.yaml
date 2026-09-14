@@ -67,6 +67,7 @@ messages:
   Miko: '用神圣的力量守护自己'
   FascinatingWolf: '请选择要诱惑的对象'
   ToughWolf: '想要使用能力的时候请在此处选择袭击对象'
+  LastStandWolf: '成为最后一只人狼后，想发动绝地袭击时请选择对象'
   ThreateningWolf: '请选择要威吓的对象'
   WanderingGuard: '请选择要护卫的对象'
   ObstructiveMad: '请选择要妨碍的对象'
