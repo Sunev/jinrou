@@ -10,6 +10,7 @@ jobname:
   Guard: '猎人'
   Couple: '共有者'
   Fox: '妖狐'
+  NineTailedFox: '九尾狐'
   Poisoner: '埋毒者'
   BigWolf: '大狼'
   TinyFox: '小狐'
@@ -1086,6 +1087,9 @@ DestroyCraziest:
 
 Actress:
   existence: '{{name}} 从舞台谢幕了。'
+
+NineTailedFox:
+  select: '{{name}} 袭击了 {{target}}。'
 
 StraySheep:
   select: '{{name}} 决意替他人死去了。'
