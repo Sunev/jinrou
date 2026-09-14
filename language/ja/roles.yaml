@@ -61,6 +61,7 @@ jobname:
   MinionSelector: '仆从选择者'
   Dog: '犬'
   Dictator: '独裁者'
+  MadDictator: '恶裁者'
   SeersMama: '占卜师的妈妈'
   Trapper: '陷阱师'
   WolfBoy: '狼少年'
@@ -479,6 +480,9 @@ Dictator:
   # Select a punishment target.
   select: '独裁者 {{name}} 宣布将要处刑 {{target}}。'
   sunset: '独裁者 {{name}} 宣布，现在天黑了。'
+MadDictator:
+  select: '恶裁者 {{name}} 宣布将要处刑 {{target}}。'
+  sunset: '恶裁者 {{name}} 宣布，现在天黑了。'
 
 # SeersMama
 SeersMama:
