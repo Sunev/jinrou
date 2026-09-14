@@ -21,6 +21,7 @@ import { makeWerewolfForm } from './werewolf';
 import { useI18n } from '../../../i18n/react';
 import { makeDragonKnightForm } from './dragonKnight';
 import { makePoet1Form, makePoet2Form } from './poet';
+import { makeNormalGuardForm, makeSuperGuardForm } from './superguard';
 import {
   makeGachaAddictedNormalForm,
   makeGachaAddictedPremiumForm,
@@ -199,6 +200,14 @@ function makeSpecialContent(props: FormContentProps): Partial<FormContent> {
   let otherContents;
   let buttons;
   switch (form.type) {
+    case 'NormalGuard': {
+      ({ content: otherContents, buttons } = makeNormalGuardForm(props as FormContentProps<'NormalGuard'>));
+      break;
+    }
+    case 'SuperGuard': {
+      ({ content: otherContents, buttons } = makeSuperGuardForm(props as FormContentProps<'SuperGuard'>));
+      break;
+    }
     case 'GameMaster': {
       otherContents = makeGameMasterForm(props);
       break;
