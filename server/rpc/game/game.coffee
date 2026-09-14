@@ -4046,6 +4046,15 @@ class Guard extends Player
         pl.transform game,newpl,true
         newpl.touched game,@id
         null
+
+class Paladin extends Guard
+    type:"Paladin"
+    midnightSort: 70
+    divined:(game,player)->
+        super
+        @die game,"curse", player.id
+        player.addGamelog game,"cursekill",null,@id
+
 class Couple extends Player
     type:"Couple"
     makejobinfo:(game,result)->
@@ -13878,6 +13887,7 @@ jobs=
     Psychic:Psychic
     Madman:Madman
     Guard:Guard
+    Paladin:Paladin
     Couple:Couple
     Fox:Fox
     Poisoner:Poisoner
@@ -14137,6 +14147,7 @@ jobStrength=
     Psychic:15
     Madman:10
     Guard:23
+    Paladin:20
     Couple:10
     Fox:25
     Poisoner:20
