@@ -1,5 +1,4 @@
 # Terms for each role.
-
 # Name of all jobs.
 jobname:
   Human: '村人'
@@ -194,7 +193,6 @@ jobname:
   RainyBoy: '雨男'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
-
   # Name of special subjobs.
   GameMaster: '游戏管理员'
   Helper: '帮手'
@@ -1222,3 +1220,12 @@ Authority:
 
 Chemical:
   jobname: '{{left}}×{{right}}'
+
+SuperGuard:
+  # Error: a Guard cannot guard a same player twice in a row
+  noGuardSame: '不能连续守护同一个人。'
+  # Selected a target.
+  select: '{{name}} 守护了 {{target}}。'
+  SuperSelect: '{{name}} 额外守护了 {{target}}。'
+  # Log of GJ
+  gj: '{{guard}} 成功守护了 {{name}}。'

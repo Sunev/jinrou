@@ -2,15 +2,15 @@
 normalName: '{{job}}的能力'
 # label of button of normal job form.
 normalButton: '选择'
-
 # label for each form type.
 formType:
   required: '必须'
   optional: '任意'
   optionalOnce: '任意（只限一次）'
-
 # Name forms which is a little special.
 specialName:
+  SuperGuard: 'SP猎人的能力'
+  NormalGuard: 'SP猎人的能力'
   _day: '处刑投票'
   _Werewolf: '人狼的袭击'
   Dog1: '犬的能力'
@@ -25,9 +25,9 @@ specialName:
   GachaAddicted_Commit: '课金者的能力'
   _Quantum_Diviner: '占卜师的能力'
   _Quantum_Werewolf: '人狼的袭击'
-
 # Message for normal selection form.  normalMessage:
 messages:
+  SuperGuard: '请选择要SP护卫的对象'
   _day: '请投票选择要处刑的对象'
   Waiting: '请选择希望就职的职业'
   WolfDiviner: '请选择要占卜的对象'
@@ -203,3 +203,19 @@ GachaAddicted:
   premiumButton: '抽取稀有卡'
   descriptionCommit: '目前持有下列职业【{{jobname}}】'
   commitButton: '将变成 {{jobname}}'
+
+SuperGuard:
+  description: '请选择SP护卫的使用对象'
+  Superdescription: '请选择SP护卫的使用对象'
+  # normal guard button.
+  GuardButton: '护卫'
+  SuperGuardUsedButton: 'SP护卫（只限一次）'
+  SuperGuardUsedButtonUsed: 'SP护卫（已经使用）'
+
+SuperDiviner:
+  description: '请选择占卜的使用对象'
+  Superdescription: '请选择SP占卜的使用对象'
+  # normal guard button.
+  DivinerButton: '占卜'
+  SuperDivinerUsedButton: 'SP占卜（只限一次）'
+  SuperDivinerUsedButtonUsed: 'SP占卜（已经使用）'
