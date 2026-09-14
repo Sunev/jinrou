@@ -1,5 +1,4 @@
 # Terms for each role.
-
 # Name of all jobs.
 jobname:
   Human: '村人'
@@ -1222,3 +1221,15 @@ Authority:
 
 Chemical:
   jobname: '{{left}}×{{right}}'
+
+SuperDiviner:
+  # Divine result
+  result:
+    human: '村人'
+  # Today's target is automatically chosen.
+  auto: '{{name}} 今天将会随机占卜一个人。'
+  # Selected a target.
+  select: '{{name}} 占卜了 {{target}} 的身份。'
+  SuperSelect: '{{name}} 额外占卜了 {{target}} 的身份。'
+  # Divining result.
+  resultlog: '{{name}} 占卜了 {{target}} 的身份，他是 {{result}}。'
