@@ -25,6 +25,8 @@ specialName:
   GachaAddicted_Commit: '课金者的能力'
   _Quantum_Diviner: '占卜师的能力'
   _Quantum_Werewolf: '人狼的袭击'
+  HimeFox: '姬狐的能力'
+  NekikillTarget: '姬狐的能力'
 
 # Message for normal selection form.  normalMessage:
 messages:
@@ -35,6 +37,7 @@ messages:
   Diviner: '请选择要占卜的对象'
   TinyFox: '请选择要占卜的对象'
   Guard: '请选择要护卫的对象'
+  MindPsychic: '请选择要施加念杀护卫的对象'
   Magician: '请选择要复活的对象'
   Spy: '准备今晚离开村子的时候请选择'
   Fugitive: '请选择要逃亡到谁家里'
@@ -63,6 +66,13 @@ messages:
   Hoodlum: '请依次选择你憎恨的对象'
   _Quantum_Diviner: '请选择要占卜的对象'
   _Quantum_Werewolf: '请选择一个要袭击的对象'
+  HimeFox:
+    sacrifice:
+      description: '请选择准备献祭的背信者或异端者'
+      button: '选择献祭对象'
+    nekikill:
+      description: '请选择要念杀的对象'
+      button: '选择念杀对象'
   Counselor: '请选择你要策反的对象'
   Miko: '用神圣的力量守护自己'
   FascinatingWolf: '请选择要诱惑的对象'

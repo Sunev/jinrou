@@ -26,6 +26,7 @@ import {
   makeGachaAddictedPremiumForm,
   makeGachaAddictedCommitForm,
 } from './gachaAddicted';
+import { makeHimeFoxSacrificeForm, makeNekikillTargetForm } from './himefox';
 
 export interface IPropJobForms {
   forms: FormDesc[];
@@ -245,6 +246,18 @@ function makeSpecialContent(props: FormContentProps): Partial<FormContent> {
     case 'GachaAddicted_Commit': {
       ({ content: otherContents, buttons } = makeGachaAddictedCommitForm(
         props as FormContentProps<'GachaAddicted_Commit'>,
+      ));
+      break;
+    }
+    case 'HimeFox': {
+      ({ content: otherContents, buttons } = makeHimeFoxSacrificeForm(
+        props as FormContentProps<'HimeFox'>,
+      ));
+      break;
+    }
+    case 'NekikillTarget': {
+      ({ content: otherContents, buttons } = makeNekikillTargetForm(
+        props as FormContentProps<'NekikillTarget'>,
       ));
       break;
     }
