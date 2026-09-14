@@ -208,6 +208,11 @@ rule:
     label: ""
     yes: "有"
     no: ""
+  werewolfdescendant_knows_wolves:
+    name: "人狼的末裔能够知道人狼"
+    label: "设为「有」的时候，人狼的末裔和狂信者一样能够知道谁是人狼。"
+    yes: "有"
+    no: "否"
   divineresult:
     name: "占卜结果"
     label: "晚上的占卜结果在什么时候发表。"
