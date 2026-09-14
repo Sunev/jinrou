@@ -33,6 +33,7 @@ messages:
   WolfDiviner: '请选择要占卜的对象'
   GreedyWolf: '在希望满足自身贪欲的场合下请选择'
   Diviner: '请选择要占卜的对象'
+  MumouDiviner: '请选择要占卜的对象'
   TinyFox: '请选择要占卜的对象'
   Guard: '请选择要护卫的对象'
   Magician: '请选择要复活的对象'
