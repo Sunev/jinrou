@@ -4813,6 +4813,23 @@ class ToughGuy extends Player
             @setFlag null
             unless @dead
                 @setDead true,"werewolf"
+
+class Elder extends Player
+    type:"Elder"
+    hasDeadResistance:->true
+    checkDeathResistance:(game, found, from)->
+        if (Found.isNormalWerewolfAttack(found) || Found.isNormalVampireAttack(found) || found == "nineTailedFox") && !@flag?
+            @setFlag "bitten"
+            attacker = game.getPlayer from
+            if attacker?
+                log =
+                    mode:"skill"
+                    to:attacker.id
+                    comment: game.i18n.t "roles:Elder.attackerNotice", {target: @name}
+                splashlog game.id, game, log
+            return true
+        false
+
 class Cupid extends Player
     type:"Cupid"
     team:"Friend"
@@ -13903,6 +13920,7 @@ jobs=
     Immoral:Immoral
     Devil:Devil
     ToughGuy:ToughGuy
+    Elder:Elder
     Cupid:Cupid
     Stalker:Stalker
     Cursed:Cursed
@@ -14162,6 +14180,7 @@ jobStrength=
     Immoral:5
     Devil:20
     ToughGuy:11
+    Elder:18
     Cupid:37
     Stalker:10
     Cursed:2
