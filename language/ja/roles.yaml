@@ -1,5 +1,4 @@
 # Terms for each role.
-
 # Name of all jobs.
 jobname:
   Human: '村人'
@@ -194,7 +193,6 @@ jobname:
   RainyBoy: '雨男'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
-
   # Name of special subjobs.
   GameMaster: '游戏管理员'
   Helper: '帮手'
@@ -1222,3 +1220,10 @@ Authority:
 
 Chemical:
   jobname: '{{left}}×{{right}}'
+
+# SuperFox
+SuperFox:
+    # Select a threatening.
+  select: '{{name}} 诅咒了 {{target}}。'
+  # Affected by threatening.
+  affected: '{{name}} 被诅咒影响，今夜无法发动能力。'
