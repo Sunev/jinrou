@@ -164,6 +164,13 @@ Merchant:
     Guard: '守护套装'
   # description.
   description: '请选择商品及其收件人'
+
+MagicalGirl:
+  kit:
+    Diviner: '占卜套装'
+    Psychic: '灵能套装'
+    Guard: '猎人套装'
+  description: '请选择你要在今晚获得的套装能力'
 # Texts for HomeComer form (extends Merchant).
 HomeComer:
   description: '请选择伴手礼及其赠送的对象'

@@ -88,6 +88,7 @@ jobname:
   DrawGirl: '看板娘'
   CautiousWolf: '慎重的狼'
   Pyrotechnist: '烟火师'
+  MagicalGirl: '魔法少女'
   Baker: '面包店'
   Bomber: '炸弹魔'
   Blasphemy: '亵渎者'
@@ -636,6 +637,13 @@ Pyrotechnist:
   select: '{{name}} 准备释放烟火了。'
   # System log that fireworks is fired.
   affect: '美丽的烟火被打上了天空。今晚不能使用能力。'
+
+MagicalGirl:
+  kit:
+    Diviner: '占卜套装'
+    Psychic: '灵能套装'
+    Guard: '猎人套装'
+  select: '{{name}} 选择了 {{kit}}，将在今晚获得对应能力。'
 
 Baker:
   # System log that a Baker is alive.
