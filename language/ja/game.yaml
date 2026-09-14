@@ -61,6 +61,8 @@ error:
     invalidTime: '时间长度不是有效数字。'
     # Players number is not enough.
     playerNotEnough: '人数不足，不能开始。含替身君最少要有{{count}}人。'
+  HimeFox:
+    invalidSacrificeTarget: '选择的对象不是有效的背信者或异端者。'
     # Too many for quantum werewolf.
     tooManyQuantum: '人数过多。量子人狼的人数应当在{{count}}人以下。'
     # Chemical werewolf is not available under this rule.
@@ -228,6 +230,8 @@ found:
   gm: '{{name}} 被GM处死了。'
   goneDay: '{{name}} 因为没有及时投票猝死了。猝死是十分令人困扰的行为，请务必不要再犯。'
   goneNight: '{{name}} 因为没有及时使用夜间技能猝死了。猝死是十分令人困扰的行为，请务必不要再犯。'
+  sacrificed: '{{name}} 被献祭了。'
+  nekikill: '{{name}} 被念杀了。'
   fallback: '{{name}} 死了。'
 
 # Detailed reason of death
@@ -249,6 +253,8 @@ foundDetail:
   punish: '处刑'
   spygone: '行踪不明'
   deathnote: '心梗'
+  sacrificed: '献祭'
+  nekikill: '念杀'
   foxsuicide: '追随妖狐自尽'
   friendsuicide: '追随恋人自尽'
   twinsuicide: '追随双胞胎自尽'

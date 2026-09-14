@@ -6,6 +6,7 @@ jobname:
   Werewolf: '人狼'
   Diviner: '占卜师'
   Psychic: '灵能者'
+  MindPsychic: '念缚灵能者'
   Madman: '狂人'
   Guard: '猎人'
   Couple: '共有者'
@@ -31,6 +32,8 @@ jobname:
   Fanatic: '狂信者'
   HearMadman: '听狂人'
   Immoral: '背德者'
+  Perfidious: '背信者'
+  Heretic: '异端者'
   Devil: '恶魔'
   ToughGuy: '硬汉'
   Cupid: '丘比特'
@@ -180,6 +183,7 @@ jobname:
   AttractiveWoman: '美女'
   DestroyCraziest: '破坏的狂人'
   Actress: '女狐'
+  HimeFox: '姬狐'
   StraySheep: '迷途羔羊'
   SpaceWerewolfCrew: '宇航员'
   SpaceWerewolfImposter: '诈欺师'
@@ -264,6 +268,11 @@ Psychic:
     human: '村人'
   # Psychi result.
   resultlog: '根据 {{name}} 的灵能结论，被处刑的 {{target}} 是 {{result}}。'
+
+MindPsychic:
+  result:
+    human: '村人'
+  curseGuardSelect: '{{name}} 对 {{target}} 施加了念杀护卫。'
 
 # Werewolf
 Werewolf:
@@ -1086,6 +1095,12 @@ DestroyCraziest:
 
 Actress:
   existence: '{{name}} 从舞台谢幕了。'
+
+HimeFox:
+  selectSacrifice: '{{name}} 选择将 {{target}} 作为献祭对象。'
+  select: '{{name}} 献祭 {{sacrifice}}，对 {{target}} 发动了念杀。'
+  nekikillBlocked: '昨晚念杀失败，被念杀护卫阻挡了。'
+  nekikillFailed: '猫又的力量反噬了念杀。'
 
 StraySheep:
   select: '{{name}} 决意替他人死去了。'
