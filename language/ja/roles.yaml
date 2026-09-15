@@ -71,6 +71,7 @@ jobname:
   Counselor: '策士'
   Miko: '巫女'
   GreedyWolf: '贪婪的狼'
+  SuperWerewolf: 'SP人狼'
   FascinatingWolf: '魅惑的女狼'
   SolitudeWolf: '孤独的狼'
   ToughWolf: '硬汉人狼'
@@ -532,6 +533,9 @@ Miko:
 GreedyWolf:
   # Select a greed.
   select: '为了满足 {{name}} 的贪欲。人狼们今晚可以多袭击一个人。'
+
+SuperWerewolf:
+  select: '人狼 {{name}} 发动了SP能力。人狼们今晚可以多袭击一个人。'
 
 # FascinatingWolf
 FascinatingWolf:
