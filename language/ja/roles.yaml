@@ -197,6 +197,7 @@ jobname:
   WerewolfDescendant: '人狼的末裔'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
+  Hero: '英雄'
 
   # Name of special subjobs.
   GameMaster: '游戏管理员'
@@ -743,6 +744,10 @@ Ninja:
 Hunter:
   # Select a hunting target.
   select: '{{name}} 向 {{target}} 开枪了。'
+
+Hero:
+  awaken: '{{name}} 觉醒为英雄了。'
+  resist: '{{name}} 抵抗了袭击，察觉到自身为英雄。'
 
 Emma:
   # Emma result strings
