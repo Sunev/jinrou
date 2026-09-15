@@ -61,6 +61,7 @@ jobname:
   MinionSelector: '仆从选择者'
   Dog: '犬'
   Dictator: '独裁者'
+  MadDictator: '恶裁者'
   SeersMama: '占卜师的妈妈'
   Trapper: '陷阱师'
   WolfBoy: '狼少年'
@@ -193,6 +194,7 @@ jobname:
   ResidualHaunting: '地缚灵'
   HouseKeeper: '保姆'
   RainyBoy: '雨男'
+  WerewolfDescendant: '人狼的末裔'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
 
@@ -479,6 +481,9 @@ Dictator:
   # Select a punishment target.
   select: '独裁者 {{name}} 宣布将要处刑 {{target}}。'
   sunset: '独裁者 {{name}} 宣布，现在天黑了。'
+MadDictator:
+  select: '恶裁者 {{name}} 宣布将要处刑 {{target}}。'
+  sunset: '恶裁者 {{name}} 宣布，现在天黑了。'
 
 # SeersMama
 SeersMama:
@@ -1107,6 +1112,9 @@ HouseKeeper:
 RainyBoy:
   select: '{{name}} 决定明天会下雨。'
   weather: '今天下雨了。'
+
+WerewolfDescendant:
+  transform: '{{name}} 作为人狼的末裔觉醒，转化为了人狼。'
 
 Itako:
   select: '{{name}} 侧耳倾听了 {{target}} 的声音。'

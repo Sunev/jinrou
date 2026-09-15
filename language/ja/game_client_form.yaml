@@ -57,6 +57,7 @@ messages:
   Dog1: '袭击你的饲主'
   Dog2: '请选择你的饲主'
   Dictator: '终止讨论，指定处刑对象'
+  MadDictator: '终止讨论，指定处刑对象'
   Trapper: '请选择要护卫的对象'
   WolfBoy: '想要让谁看起来像人狼'
   MinionSelector: '请指定狼的仆从'

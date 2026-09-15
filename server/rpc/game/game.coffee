@@ -5933,7 +5933,7 @@ class Dictator extends Player
         @setTarget playerid    # 処刑する人
         log=
             mode:"system"
-            comment: game.i18n.t "roles:Dictator.select", {name: @name, target: pl.name}
+            comment: game.i18n.t "roles:#{@type}.select", {name: @name, target: pl.name}
         splashlog game.id,game,log
         @setFlag true  # 使用済
         # その場で殺す!!!
@@ -5941,7 +5941,7 @@ class Dictator extends Player
         # 天黑了
         log=
             mode:"system"
-            comment: game.i18n.t "roles:Dictator.sunset", {name: @name}
+            comment: game.i18n.t "roles:#{@type}.sunset", {name: @name}
         splashlog game.id,game,log
         # XXX executeの中と同じことが書いてある
         game.bury "punish"
@@ -5952,6 +5952,9 @@ class Dictator extends Player
                 return if game.judge()
             game.nextturn()
         return null
+class MadDictator extends Dictator
+    type:"MadDictator"
+    team:"Werewolf"
 class SeersMama extends Player
     type:"SeersMama"
     sleeping:->true
@@ -11754,6 +11757,31 @@ class RainyBoy extends Madman
             []
         else super
 
+class WerewolfDescendant extends Madman
+    type: "WerewolfDescendant"
+    getVisibilityQuery:(game)->
+        res = super
+        if game?.rule && game.rule.werewolfdescendant_knows_wolves == "on"
+            res.wolves = true
+        res
+    beforebury:(game, type)->
+        return false if @dead
+        wolves = game.players.filter (pl)-> pl.isWerewolf()
+        unless wolves.every((pl)-> pl.dead)
+            return false
+        newpl = Player.factory "Werewolf", game
+        @transProfile newpl
+        @transferData newpl, true
+        log =
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:WerewolfDescendant.transform", {name: @name}
+        splashlog game.id, game, log
+        @transform game, newpl, false
+        newpl.sunset game
+        game.splashjobinfo [newpl]
+        false
+
 class DarkPsychic extends Psychic
     type: "DarkPsychic"
     hasDeadlyWeapon:-> true
@@ -13957,6 +13985,7 @@ jobs=
     Thief:Thief
     Dog:Dog
     Dictator:Dictator
+    MadDictator:MadDictator
     SeersMama:SeersMama
     Trapper:Trapper
     WolfBoy:WolfBoy
@@ -14084,6 +14113,7 @@ jobs=
     ResidualHaunting:ResidualHaunting
     HouseKeeper: HouseKeeper
     RainyBoy:RainyBoy
+    WerewolfDescendant:WerewolfDescendant
     DarkPsychic:DarkPsychic
     Itako:Itako
     SpaceWerewolfCrew:SpaceWerewolfCrew
@@ -14217,6 +14247,7 @@ jobStrength=
     Thief:0
     Dog:7
     Dictator:18
+    MadDictator:18
     SeersMama:15
     Trapper:13
     WolfBoy:11
@@ -14340,6 +14371,7 @@ jobStrength=
     ResidualHaunting:10
     HouseKeeper: 15
     RainyBoy: 10
+    WerewolfDescendant: 10
     DarkPsychic: 8
     Itako: 15
 
@@ -15575,6 +15607,7 @@ module.exports.actions=(req,res,ss)->
             "hunter_lastattack",
             "poisonwolf",
             "friendssplit",
+            "werewolfdescendant_knows_wolves",
             "quantumwerewolf_table","quantumwerewolf_dead","quantumwerewolf_diviner","quantumwerewolf_firstattack","yaminabe_hidejobs","yaminabe_safety",
             "hide_singleton_teams"
             ]
