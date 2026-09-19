@@ -12449,6 +12449,7 @@ class LandmineGirl extends Madman
         @setFlag {
             knownWolf: null
             used: false
+            readyNotified: false
         }
     getState:->
         @flag ? {
@@ -12475,6 +12476,14 @@ class LandmineGirl extends Madman
                 splashlog game.id,game,log
         if @canAttack(game)
             @setTarget null
+            unless state.readyNotified
+                state.readyNotified = true
+                @setFlag state
+                log =
+                    mode:"skill"
+                    to:@id
+                    comment: game.i18n.t "roles:LandmineGirl.ready", {name: @name}
+                splashlog game.id,game,log
         else
             @setTarget ""
     job:(game, playerid)->

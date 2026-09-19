@@ -1132,7 +1132,8 @@ Assassin:
 
 LandmineGirl:
   knownWolf: '{{name}} 得知 {{target}} 是人狼。'
-  select: '{{name}} 袭击了 {{target}}。'
+  ready: '地雷少女 {{name}} 已经可以发动袭击。'
+  select: '{{name}} 由于想要被爱，袭击了 {{target}}。'
   counterKilled: '{{name}} 袭击 {{target}} 时被反杀了。'
 
 Shadow:
