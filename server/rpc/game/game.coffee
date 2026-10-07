@@ -1769,7 +1769,7 @@ class Game
                         break
         @werewolf_flag=@werewolf_flag.filter (fl)->
             # こいつらは1夜限り
-            return !(/^(?:GreedyWolf|ToughWolf)_/.test fl)
+            return !(/^(?:GreedyWolf|ToughWolf|SuperWerewolf)_/.test fl)
     # ドラキュラの攻撃を処理する
     midnightDraculaAttack:->
         if @day == 1
@@ -6117,7 +6117,7 @@ class Dictator extends Player
         @setTarget playerid    # 処刑する人
         log=
             mode:"system"
-            comment: game.i18n.t "roles:Dictator.select", {name: @name, target: pl.name}
+            comment: game.i18n.t "roles:#{@type}.select", {name: @name, target: pl.name}
         splashlog game.id,game,log
         @setFlag true  # 使用済
         # その場で殺す!!!
@@ -6125,7 +6125,7 @@ class Dictator extends Player
         # 天黑了
         log=
             mode:"system"
-            comment: game.i18n.t "roles:Dictator.sunset", {name: @name}
+            comment: game.i18n.t "roles:#{@type}.sunset", {name: @name}
         splashlog game.id,game,log
         # XXX executeの中と同じことが書いてある
         game.bury "punish"
@@ -6136,6 +6136,9 @@ class Dictator extends Player
                 return if game.judge()
             game.nextturn()
         return null
+class MadDictator extends Dictator
+    type:"MadDictator"
+    team:"Werewolf"
 class SeersMama extends Player
     type:"SeersMama"
     sleeping:->true
@@ -6648,6 +6651,32 @@ class GreedyWolf extends Werewolf
             # なしでOK!
             return true
         return super
+class SuperWerewolf extends Werewolf
+    type:"SuperWerewolf"
+    canUseSuperWerewolf:(game)-> game.day >= 2
+    sleeping:(game)->game.werewolf_target_remain<=0
+    jobdone:(game)->game.werewolf_target_remain<=0 && (@flag || !@canUseSuperWerewolf(game))
+    job:(game,playerid,query)->
+        return super if query.jobtype!="SuperWerewolf"
+        return game.i18n.t "error.common.alreadyUsed" if @flag
+        return game.i18n.t "error.common.cannotUseSkillNow" unless @canUseSuperWerewolf(game)
+        return game.i18n.t "error.common.cannotUseSkillNow" if game.werewolf_target_remain+game.werewolf_target.length==0
+        @setFlag true
+        splashlog game.id,game,{mode:"wolfskill",comment:game.i18n.t "roles:SuperWerewolf.select", {name: @name}}
+        game.werewolf_target_remain++
+        game.werewolf_flag.push "SuperWerewolf_#{@id}"
+        game.splashjobinfo game.players.filter (x)=>x.id!=@id && x.isWerewolf()
+        null
+    getOpenForms:(game)->
+        res = super
+        if Phase.isNight(game.phase) && !@flag && @canUseSuperWerewolf(game)
+            res.push {type:"SuperWerewolf",options:[],formType:FormType.optionalOnce,objid:@objid}
+        res
+    makeJobSelection:(game,isvote)->
+        if !isvote && @sleeping(game) && !@jobdone(game) then [] else super
+    checkJobValidity:(game,query)->
+        return true if query.jobtype=="SuperWerewolf"
+        super
 class FascinatingWolf extends Werewolf
     type:"FascinatingWolf"
     sleeping:(game)->super && @flag?
@@ -11912,6 +11941,31 @@ class RainyBoy extends Madman
             []
         else super
 
+class WerewolfDescendant extends Madman
+    type: "WerewolfDescendant"
+    getVisibilityQuery:(game)->
+        res = super
+        if game?.rule && game.rule.werewolfdescendant_knows_wolves == "on"
+            res.wolves = true
+        res
+    beforebury:(game, type)->
+        return false if @dead
+        wolves = game.players.filter (pl)-> pl.isWerewolf()
+        unless wolves.every((pl)-> pl.dead)
+            return false
+        newpl = Player.factory "Werewolf", game
+        @transProfile newpl
+        @transferData newpl, true
+        log =
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:WerewolfDescendant.transform", {name: @name}
+        splashlog game.id, game, log
+        @transform game, newpl, false
+        newpl.sunset game
+        game.splashjobinfo [newpl]
+        false
+
 class DarkPsychic extends Psychic
     type: "DarkPsychic"
     hasDeadlyWeapon:-> true
@@ -14116,6 +14170,7 @@ jobs=
     Thief:Thief
     Dog:Dog
     Dictator:Dictator
+    MadDictator:MadDictator
     SeersMama:SeersMama
     Trapper:Trapper
     WolfBoy:WolfBoy
@@ -14125,6 +14180,7 @@ jobs=
     Counselor:Counselor
     Miko:Miko
     GreedyWolf:GreedyWolf
+    SuperWerewolf:SuperWerewolf
     FascinatingWolf:FascinatingWolf
     SolitudeWolf:SolitudeWolf
     ToughWolf:ToughWolf
@@ -14242,6 +14298,7 @@ jobs=
     ResidualHaunting:ResidualHaunting
     HouseKeeper: HouseKeeper
     RainyBoy:RainyBoy
+    WerewolfDescendant:WerewolfDescendant
     DarkPsychic:DarkPsychic
     Itako:Itako
     SpaceWerewolfCrew:SpaceWerewolfCrew
@@ -14376,6 +14433,7 @@ jobStrength=
     Thief:0
     Dog:7
     Dictator:18
+    MadDictator:18
     SeersMama:15
     Trapper:13
     WolfBoy:11
@@ -14385,6 +14443,7 @@ jobStrength=
     Counselor:25
     Miko:14
     GreedyWolf:60
+    SuperWerewolf:60
     FascinatingWolf:52
     SolitudeWolf:20
     ToughWolf:55
@@ -14498,6 +14557,7 @@ jobStrength=
     ResidualHaunting:10
     HouseKeeper: 15
     RainyBoy: 10
+    WerewolfDescendant: 10
     DarkPsychic: 8
     Itako: 15
 
@@ -15733,6 +15793,7 @@ module.exports.actions=(req,res,ss)->
             "hunter_lastattack",
             "poisonwolf",
             "friendssplit",
+            "werewolfdescendant_knows_wolves",
             "quantumwerewolf_table","quantumwerewolf_dead","quantumwerewolf_diviner","quantumwerewolf_firstattack","yaminabe_hidejobs","yaminabe_safety",
             "hide_singleton_teams"
             ]

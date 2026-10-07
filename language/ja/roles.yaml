@@ -60,6 +60,7 @@ jobname:
   MinionSelector: '仆从选择者'
   Dog: '犬'
   Dictator: '独裁者'
+  MadDictator: '恶裁者'
   SeersMama: '占卜师的妈妈'
   Trapper: '陷阱师'
   WolfBoy: '狼少年'
@@ -69,6 +70,7 @@ jobname:
   Counselor: '策士'
   Miko: '巫女'
   GreedyWolf: '贪婪的狼'
+  SuperWerewolf: 'SP人狼'
   FascinatingWolf: '魅惑的女狼'
   SolitudeWolf: '孤独的狼'
   ToughWolf: '硬汉人狼'
@@ -191,6 +193,7 @@ jobname:
   ResidualHaunting: '地缚灵'
   HouseKeeper: '保姆'
   RainyBoy: '雨男'
+  WerewolfDescendant: '人狼的末裔'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
 
@@ -477,6 +480,9 @@ Dictator:
   # Select a punishment target.
   select: '独裁者 {{name}} 宣布将要处刑 {{target}}。'
   sunset: '独裁者 {{name}} 宣布，现在天黑了。'
+MadDictator:
+  select: '恶裁者 {{name}} 宣布将要处刑 {{target}}。'
+  sunset: '恶裁者 {{name}} 宣布，现在天黑了。'
 
 # SeersMama
 SeersMama:
@@ -526,6 +532,9 @@ Miko:
 GreedyWolf:
   # Select a greed.
   select: '为了满足 {{name}} 的贪欲。人狼们今晚可以多袭击一个人。'
+
+SuperWerewolf:
+  select: '人狼 {{name}} 发动了SP能力。人狼们今晚可以多袭击一个人。'
 
 # FascinatingWolf
 FascinatingWolf:
@@ -1102,6 +1111,9 @@ HouseKeeper:
 RainyBoy:
   select: '{{name}} 决定明天会下雨。'
   weather: '今天下雨了。'
+
+WerewolfDescendant:
+  transform: '{{name}} 作为人狼的末裔觉醒，转化为了人狼。'
 
 Itako:
   select: '{{name}} 侧耳倾听了 {{target}} 的声音。'
