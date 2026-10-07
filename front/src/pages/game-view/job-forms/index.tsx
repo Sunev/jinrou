@@ -21,11 +21,13 @@ import { makeWerewolfForm } from './werewolf';
 import { useI18n } from '../../../i18n/react';
 import { makeDragonKnightForm } from './dragonKnight';
 import { makePoet1Form, makePoet2Form } from './poet';
+import { makeNormalDivinerForm, makeSuperDivinerForm } from './superdiviner';
 import {
   makeGachaAddictedNormalForm,
   makeGachaAddictedPremiumForm,
   makeGachaAddictedCommitForm,
 } from './gachaAddicted';
+import { makeHimeFoxSacrificeForm, makeNekikillTargetForm } from './himefox';
 
 export interface IPropJobForms {
   forms: FormDesc[];
@@ -199,6 +201,14 @@ function makeSpecialContent(props: FormContentProps): Partial<FormContent> {
   let otherContents;
   let buttons;
   switch (form.type) {
+    case 'NormalDiviner': {
+      ({ content: otherContents, buttons } = makeNormalDivinerForm(props as FormContentProps<'NormalDiviner'>));
+      break;
+    }
+    case 'SuperDiviner': {
+      ({ content: otherContents, buttons } = makeSuperDivinerForm(props as FormContentProps<'SuperDiviner'>));
+      break;
+    }
     case 'GameMaster': {
       otherContents = makeGameMasterForm(props);
       break;
@@ -245,6 +255,18 @@ function makeSpecialContent(props: FormContentProps): Partial<FormContent> {
     case 'GachaAddicted_Commit': {
       ({ content: otherContents, buttons } = makeGachaAddictedCommitForm(
         props as FormContentProps<'GachaAddicted_Commit'>,
+      ));
+      break;
+    }
+    case 'HimeFox': {
+      ({ content: otherContents, buttons } = makeHimeFoxSacrificeForm(
+        props as FormContentProps<'HimeFox'>,
+      ));
+      break;
+    }
+    case 'NekikillTarget': {
+      ({ content: otherContents, buttons } = makeNekikillTargetForm(
+        props as FormContentProps<'NekikillTarget'>,
       ));
       break;
     }
