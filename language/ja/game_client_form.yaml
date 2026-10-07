@@ -2,7 +2,6 @@
 normalName: '{{job}}的能力'
 # label of button of normal job form.
 normalButton: '选择'
-
 # label for each form type.
 formType:
   required: '必须'
@@ -26,6 +25,12 @@ specialName:
   GachaAddicted_Commit: '课金者的能力'
   _Quantum_Diviner: '占卜师的能力'
   _Quantum_Werewolf: '人狼的袭击'
+  SuperDiviner: 'SP占卜师的能力'
+  NormalDiviner: 'SP占卜师的能力'
+  SuperGuard: 'SP猎人的能力'
+  NormalGuard: 'SP猎人的能力'
+  HimeFox: '姬狐的能力'
+  NekikillTarget: '姬狐的能力'
 
 # Message for normal selection form.  normalMessage:
 messages:
@@ -34,9 +39,12 @@ messages:
   Waiting: '请选择希望就职的职业'
   WolfDiviner: '请选择要占卜的对象'
   GreedyWolf: '在希望满足自身贪欲的场合下请选择'
+  SuperWerewolf: '在想要发动SP能力，额外袭击1人的情况下请选择'
   Diviner: '请选择要占卜的对象'
   TinyFox: '请选择要占卜的对象'
   Guard: '请选择要护卫的对象'
+  OldGuard: '请选择要护卫的对象'
+  MindPsychic: '请选择要施加念杀护卫的对象'
   Magician: '请选择要复活的对象'
   Spy: '准备今晚离开村子的时候请选择'
   Fugitive: '请选择要逃亡到谁家里'
@@ -58,6 +66,7 @@ messages:
   Dog1: '袭击你的饲主'
   Dog2: '请选择你的饲主'
   Dictator: '终止讨论，指定处刑对象'
+  MadDictator: '终止讨论，指定处刑对象'
   Trapper: '请选择要护卫的对象'
   WolfBoy: '想要让谁看起来像人狼'
   MinionSelector: '请指定狼的仆从'
@@ -136,6 +145,16 @@ messages:
   HouseKeeper: '请选择打理家务的客户'
   RainyBoy: '请在准备下雨的时候选择'
   Itako: '请在准备倾听死者声音的时候选择'
+  SuperDiviner: '请选择要SP占卜的对象'
+  SuperGuard: '请选择要SP护卫的对象'
+  HimeFox:
+    sacrifice:
+      description: '请选择准备献祭的背信者或异端者'
+      button: '选择献祭对象'
+    nekikill:
+      description: '请选择要念杀的对象'
+      button: '选择念杀对象'
+  NineTailedFox: '请选择要袭击的对象'
 
   # Message for normal selection form of special subjobs.  normalMessage:
   SpaceWerewolfObserver: '请选择要观察的对象'
@@ -205,3 +224,19 @@ GachaAddicted:
   premiumButton: '抽取稀有卡'
   descriptionCommit: '目前持有下列职业【{{jobname}}】'
   commitButton: '将变成 {{jobname}}'
+
+SuperGuard:
+  description: '请选择SP护卫的使用对象'
+  Superdescription: '请选择SP护卫的使用对象'
+  # normal guard button.
+  GuardButton: '护卫'
+  SuperGuardUsedButton: 'SP护卫（只限一次）'
+  SuperGuardUsedButtonUsed: 'SP护卫（已经使用）'
+
+SuperDiviner:
+  description: '请选择占卜的使用对象'
+  Superdescription: '请选择SP占卜的使用对象'
+  # normal guard button.
+  DivinerButton: '占卜'
+  SuperDivinerUsedButton: 'SP占卜（只限一次）'
+  SuperDivinerUsedButtonUsed: 'SP占卜（已经使用）'
