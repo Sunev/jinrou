@@ -227,6 +227,7 @@ log:
     Villager: '村人'
     # Diviner column,
     Diviner: '占卜师'
+    MumouDiviner: '无谋的占卜师'
     # Human column.
     Human: '人类'
     Werewolf: '人狼'
