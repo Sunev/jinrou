@@ -11,6 +11,7 @@ jobname:
   OldGuard: '老骑士'
   Couple: '共有者'
   Fox: '妖狐'
+  NineTailedFox: '九尾狐'
   Poisoner: '埋毒者'
   BigWolf: '大狼'
   TinyFox: '小狐'
@@ -1110,6 +1111,9 @@ HimeFox:
   select: '{{name}} 献祭 {{sacrifice}}，对 {{target}} 发动了念杀。'
   nekikillBlocked: '昨晚念杀失败，被念杀护卫阻挡了。'
   nekikillFailed: '猫又的力量反噬了念杀。'
+
+NineTailedFox:
+  select: '{{name}} 袭击了 {{target}}。'
 
 StraySheep:
   select: '{{name}} 决意替他人死去了。'
