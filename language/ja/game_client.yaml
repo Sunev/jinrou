@@ -111,6 +111,7 @@ jobinfo:
     targets: '你的目标是 {{names}}'
     enemies: '你的宿敌是 {{names}}'
     spaceWerewolfImposters: '同伴的诈欺师是 {{names}}'
+    perfidious: '同伴的背信者是 {{names}}'
 
 # game-view: speak form.
 speak:
