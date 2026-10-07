@@ -158,6 +158,7 @@ messages:
       description: '请选择要念杀的对象'
       button: '选择念杀对象'
   NineTailedFox: '请选择要袭击的对象'
+  FoxMatchmaker: '请依次选择两名恋人'
 
   # Message for normal selection form of special subjobs.  normalMessage:
   SpaceWerewolfObserver: '请选择要观察的对象'

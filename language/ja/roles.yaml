@@ -191,6 +191,7 @@ jobname:
   DestroyCraziest: '破坏的狂人'
   Actress: '女狐'
   HimeFox: '姬狐'
+  FoxMatchmaker: '狐妖小红娘'
   StraySheep: '迷途羔羊'
   SpaceWerewolfCrew: '宇航员'
   SpaceWerewolfImposter: '诈欺师'
@@ -1132,6 +1133,11 @@ HimeFox:
 
 NineTailedFox:
   select: '{{name}} 袭击了 {{target}}。'
+
+FoxMatchmaker:
+  select1: '{{name}} 选择了 {{target}} 作为第一名恋人候补。'
+  select: '{{name}} 将 {{target}} 缔结为恋人。'
+  become: '{{name}} 被狐妖小红娘缔结为恋人了。'
 
 StraySheep:
   select: '{{name}} 决意替他人死去了。'
