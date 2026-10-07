@@ -2,7 +2,6 @@
 normalName: '{{job}}的能力'
 # label of button of normal job form.
 normalButton: '选择'
-
 # label for each form type.
 formType:
   required: '必须'
@@ -11,6 +10,8 @@ formType:
 
 # Name forms which is a little special.
 specialName:
+  SuperDiviner: 'SP占卜师的能力'
+  NormalDiviner: 'SP占卜师的能力'
   _day: '处刑投票'
   _Werewolf: '人狼的袭击'
   Dog1: '犬的能力'
@@ -30,10 +31,12 @@ specialName:
 
 # Message for normal selection form.  normalMessage:
 messages:
+  SuperDiviner: '请选择要SP占卜的对象'
   _day: '请投票选择要处刑的对象'
   Waiting: '请选择希望就职的职业'
   WolfDiviner: '请选择要占卜的对象'
   GreedyWolf: '在希望满足自身贪欲的场合下请选择'
+  SuperWerewolf: '在想要发动SP能力，额外袭击1人的情况下请选择'
   Diviner: '请选择要占卜的对象'
   TinyFox: '请选择要占卜的对象'
   Guard: '请选择要护卫的对象'
@@ -59,6 +62,7 @@ messages:
   Dog1: '袭击你的饲主'
   Dog2: '请选择你的饲主'
   Dictator: '终止讨论，指定处刑对象'
+  MadDictator: '终止讨论，指定处刑对象'
   Trapper: '请选择要护卫的对象'
   WolfBoy: '想要让谁看起来像人狼'
   MinionSelector: '请指定狼的仆从'
@@ -213,3 +217,11 @@ GachaAddicted:
   premiumButton: '抽取稀有卡'
   descriptionCommit: '目前持有下列职业【{{jobname}}】'
   commitButton: '将变成 {{jobname}}'
+
+SuperDiviner:
+  description: '请选择占卜的使用对象'
+  Superdescription: '请选择SP占卜的使用对象'
+  # normal guard button.
+  DivinerButton: '占卜'
+  SuperDivinerUsedButton: 'SP占卜（只限一次）'
+  SuperDivinerUsedButtonUsed: 'SP占卜（已经使用）'
