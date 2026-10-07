@@ -1265,3 +1265,11 @@ SuperDiviner:
   SuperSelect: '{{name}} 额外占卜了 {{target}} 的身份。'
   # Divining result.
   resultlog: '{{name}} 占卜了 {{target}} 的身份，他是 {{result}}。'
+SuperGuard:
+  # Error: a Guard cannot guard a same player twice in a row
+  noGuardSame: '不能连续守护同一个人。'
+  # Selected a target.
+  select: '{{name}} 守护了 {{target}}。'
+  SuperSelect: '{{name}} 额外守护了 {{target}}。'
+  # Log of GJ
+  gj: '{{guard}} 成功守护了 {{name}}。'
