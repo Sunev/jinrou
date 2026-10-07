@@ -16,6 +16,7 @@ jobname:
   NineTailedFox: '九尾狐'
   Poisoner: '埋毒者'
   BigWolf: '大狼'
+  DoubleHeadedWolf: '双头狼'
   TinyFox: '小狐'
   Bat: '蝙蝠'
   Noble: '贵族'
@@ -250,12 +251,14 @@ fortune:
   vampire: '吸血鬼'
   pumpkin: '南瓜'
   oni: '鬼'
+  DoubleHeadedWolf: '双头狼'
 
 # Psychic result.
 psychic:
   human: '村人'
   werewolf: '人狼'
   BigWolf: '大狼'
+  DoubleHeadedWolf: '双头狼'
   TinyFox: '小狐'
   oni: '鬼'
   # delimiter of multiple result in chemical.
