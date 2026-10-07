@@ -10,8 +10,6 @@ formType:
 
 # Name forms which is a little special.
 specialName:
-  SuperDiviner: 'SP占卜师的能力'
-  NormalDiviner: 'SP占卜师的能力'
   _day: '处刑投票'
   _Werewolf: '人狼的袭击'
   Dog1: '犬的能力'
@@ -26,12 +24,15 @@ specialName:
   GachaAddicted_Commit: '课金者的能力'
   _Quantum_Diviner: '占卜师的能力'
   _Quantum_Werewolf: '人狼的袭击'
+  SuperDiviner: 'SP占卜师的能力'
+  NormalDiviner: 'SP占卜师的能力'
+  SuperGuard: 'SP猎人的能力'
+  NormalGuard: 'SP猎人的能力'
   HimeFox: '姬狐的能力'
   NekikillTarget: '姬狐的能力'
 
 # Message for normal selection form.  normalMessage:
 messages:
-  SuperDiviner: '请选择要SP占卜的对象'
   _day: '请投票选择要处刑的对象'
   Waiting: '请选择希望就职的职业'
   WolfDiviner: '请选择要占卜的对象'
@@ -71,13 +72,6 @@ messages:
   Hoodlum: '请依次选择你憎恨的对象'
   _Quantum_Diviner: '请选择要占卜的对象'
   _Quantum_Werewolf: '请选择一个要袭击的对象'
-  HimeFox:
-    sacrifice:
-      description: '请选择准备献祭的背信者或异端者'
-      button: '选择献祭对象'
-    nekikill:
-      description: '请选择要念杀的对象'
-      button: '选择念杀对象'
   Counselor: '请选择你要策反的对象'
   Miko: '用神圣的力量守护自己'
   FascinatingWolf: '请选择要诱惑的对象'
@@ -149,6 +143,15 @@ messages:
   HouseKeeper: '请选择打理家务的客户'
   RainyBoy: '请在准备下雨的时候选择'
   Itako: '请在准备倾听死者声音的时候选择'
+  SuperDiviner: '请选择要SP占卜的对象'
+  SuperGuard: '请选择要SP护卫的对象'
+  HimeFox:
+    sacrifice:
+      description: '请选择准备献祭的背信者或异端者'
+      button: '选择献祭对象'
+    nekikill:
+      description: '请选择要念杀的对象'
+      button: '选择念杀对象'
   NineTailedFox: '请选择要袭击的对象'
 
   # Message for normal selection form of special subjobs.  normalMessage:
@@ -219,6 +222,14 @@ GachaAddicted:
   premiumButton: '抽取稀有卡'
   descriptionCommit: '目前持有下列职业【{{jobname}}】'
   commitButton: '将变成 {{jobname}}'
+
+SuperGuard:
+  description: '请选择SP护卫的使用对象'
+  Superdescription: '请选择SP护卫的使用对象'
+  # normal guard button.
+  GuardButton: '护卫'
+  SuperGuardUsedButton: 'SP护卫（只限一次）'
+  SuperGuardUsedButtonUsed: 'SP护卫（已经使用）'
 
 SuperDiviner:
   description: '请选择占卜的使用对象'
