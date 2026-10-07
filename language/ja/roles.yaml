@@ -202,7 +202,6 @@ jobname:
   WerewolfDescendant: '人狼的末裔'
   DarkPsychic: '黑暗灵媒师'
   Itako: '潮来巫女'
-
   # Name of special subjobs.
   GameMaster: '游戏管理员'
   Helper: '帮手'
@@ -1265,6 +1264,7 @@ SuperDiviner:
   SuperSelect: '{{name}} 额外占卜了 {{target}} 的身份。'
   # Divining result.
   resultlog: '{{name}} 占卜了 {{target}} 的身份，他是 {{result}}。'
+
 SuperGuard:
   # Error: a Guard cannot guard a same player twice in a row
   noGuardSame: '不能连续守护同一个人。'
@@ -1273,3 +1273,10 @@ SuperGuard:
   SuperSelect: '{{name}} 额外守护了 {{target}}。'
   # Log of GJ
   gj: '{{guard}} 成功守护了 {{name}}。'
+
+# SuperFox
+SuperFox:
+    # Select a threatening.
+  select: '{{name}} 诅咒了 {{target}}。'
+  # Affected by threatening.
+  affected: '{{name}} 被诅咒影响，今夜无法发动能力。'
