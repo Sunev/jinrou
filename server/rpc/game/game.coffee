@@ -6433,6 +6433,17 @@ class Teruteru extends Player
                 }
             splashlog game.id, game, log
 
+class ButaOtoko extends Player
+    type:"ButaOtoko"
+    team:""
+    checkDeathResistance:(game, found)->
+        if Found.isNormalWerewolfAttack found
+            @setFlag "win"
+            return false
+        else
+            return false
+    isWinner:(game,team)->@dead && @flag=="win"
+
 class OccultMania extends Player
     type:"OccultMania"
     midnightSort:102
@@ -15097,6 +15108,7 @@ jobs=
     OldGuard:OldGuard
     Tanner:Tanner
     Teruteru:Teruteru
+    ButaOtoko:ButaOtoko
     OccultMania:OccultMania
     MinionSelector:MinionSelector
     WolfCub:WolfCub
@@ -15379,6 +15391,7 @@ jobStrength=
     Oldman:4
     Tanner:15
     Teruteru:15
+    ButaOtoko:15
     OccultMania:10
     MinionSelector:0
     WolfCub:70
