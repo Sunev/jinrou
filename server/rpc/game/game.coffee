@@ -29,7 +29,7 @@ LOG_PEEKING_JOBS = ["NightRabbit"]
 # 村人だと思い込む役職
 HUMAN_DISP_JOBS = ["Oracle","Fate","Sleepwalker","Dreamer"]
 # 狩人仲間の役職
-GUARD_JOBS = ["Guard", "Cosplayer", "WanderingGuard", "Samurai", "Trapper", "DragonKnight", "Elementaler"]
+GUARD_JOBS = ["Guard", "OldGuard", "Cosplayer", "WanderingGuard", "Samurai", "Trapper", "DragonKnight", "Elementaler"]
 
 # 配信者が獲得できる役職
 STREAMER_AVAILABLE_JOBS = [
@@ -73,6 +73,8 @@ FortuneResult =
     pumpkin: "pumpkin"
     # oni
     oni: "oni"
+    # DoubleHeadedWolf
+    DoubleHeadedWolf: "DoubleHeadedWolf"
 
 # Code of psychic result.
 # Actual result may be string of array of string.
@@ -83,6 +85,8 @@ PsychicResult =
     werewolf: "werewolf"
     # BigWolf
     BigWolf: "BigWolf"
+    # DoubleHeadedWolf
+    DoubleHeadedWolf: "DoubleHeadedWolf"
     # TinyFox
     TinyFox: "TinyFox"
     # oni
@@ -93,6 +97,7 @@ PsychicResult =
         oni: 1
         werewolf: 2
         BigWolf: 3
+        DoubleHeadedWolf: 3
         TinyFox: 3
     # function to combine two results in chemical.
     # filter out low priority results.
@@ -164,7 +169,7 @@ Found =
         found in ["werewolf"]
     # whether this is a guardable attack.
     isGuardableAttack:(found)->
-        found == "vampire" || Found.isGuardableWerewolfAttack(found)
+        found in ["vampire", "nineTailedFox"] || Found.isGuardableWerewolfAttack(found)
     # whether this is a werewolf attack.
     isNormalWerewolfAttack: (found)->
         found in ["werewolf", "trickedWerewolf"]
@@ -1756,6 +1761,18 @@ class Game
                                     tw.addGamelog this,"toughwolfKilled",t.type,t.id
                             break
                 unless flg_flg
+                    for fl in @werewolf_flag
+                        res = fl.match /^LastStandWolf_(.+)$/
+                        if res?
+                            lw = @getPlayer res[1]
+                            t = @getPlayer actTarget
+                            if t?
+                                t.setDead true,"werewolf"
+                                t.dying this,"werewolf",lw?.id
+                                flg_flg=true
+                                lw?.addGamelog this,"lastStandWolfKilled",t.type,t.id
+                            break
+                unless flg_flg
                     # 一途は発動しなかった
                     for fl in @werewolf_flag
                         res = fl.match /^GreedyWolf_(.+)$/
@@ -1773,7 +1790,7 @@ class Game
                         break
         @werewolf_flag=@werewolf_flag.filter (fl)->
             # こいつらは1夜限り
-            return !(/^(?:GreedyWolf|ToughWolf)_/.test fl)
+            return !(/^(?:GreedyWolf|ToughWolf|SuperWerewolf|LastStandWolf)_/.test fl)
     # ドラキュラの攻撃を処理する
     midnightDraculaAttack:->
         if @day == 1
@@ -1925,7 +1942,7 @@ class Game
             x = obj.pl
             situation=switch obj.found
                 #死因
-                when "werewolf","werewolf2","trickedWerewolf","poison","hinamizawa","vampire","vampire2","witch","dog","trap","marycurse","psycho","crafty","greedy","tough","lunaticlover","hooligan","dragon","samurai","elemental","sacrifice","lorelei","oni","selfdestruct","assassinate","ghostrevenge"
+                when "werewolf","werewolf2","trickedWerewolf","nineTailedFox","poison","hinamizawa","vampire","vampire2","witch","dog","trap","marycurse","psycho","crafty","greedy","tough","lunaticlover","hooligan","dragon","samurai","elemental","sacrifice","lorelei","oni","selfdestruct","assassinate","ghostrevenge"
                     @i18n.t "found.normal", {name: x.name}
                 when "bomb"
                     @i18n.t "found.normal", {name: x.name}
@@ -1954,6 +1971,10 @@ class Game
                     @i18n.t "found.goneDay", {name: x.name}
                 when "gone-night"
                     @i18n.t "found.goneNight", {name: x.name}
+                when "sacrificed"
+                    @i18n.t "found.sacrificed", {name: x.name}
+                when "nekikill"
+                    @i18n.t "found.nekikill", {name: x.name}
                 else
                     @i18n.t "found.fallback", {name: x.name}
             log=
@@ -1964,9 +1985,9 @@ class Game
             # Show invisible detail of death
             # but do not show for obvious type of death.
             unless (obj.found in ["punish", "infirm", "bonds", "hunter", "gm", "gone-day", "gone-night"]) || (obj.found == "curse" && @rule.deadfox == "obvious")
-                if ["werewolf","werewolf2","trickedWerewolf","poison","hinamizawa",
+                if ["werewolf","werewolf2","trickedWerewolf","nineTailedFox","poison","hinamizawa",
                     "vampire","vampire2","witch","dog","trap","bomb",
-                    "marycurse","psycho","curse","punish","spygone","deathnote",
+                    "marycurse","psycho","curse","punish","spygone","deathnote","sacrificed","nekikill",
                     "foxsuicide","friendsuicide","twinsuicide","dragonknightsuicide","vampiresuicide","santasuicide","fascinatesuicide","loreleisuicide"
                     "infirm","hunter",
                     "gmpunish","gone-day","gone-night","crafty","greedy","tough","lunaticlover",
@@ -1986,6 +2007,8 @@ class Game
                 emma_log=switch obj.found
                     when "werewolf","werewolf2","trickedWerewolf","crafty","greedy","tough"
                         "werewolf"
+                    when "nineTailedFox"
+                        "nineTailedFox"
                     when "poison","witch"
                         "poison"
                     when "hinamizawa"
@@ -2043,6 +2066,10 @@ class Game
                         "assassinate"
                     when "ghostrevenge"
                         "ghostrevenge"
+                    when "sacrificed"
+                        "sacrificed"
+                    when "nekikill"
+                        "nekikill"
                     else
                         null
                 if emma_log?
@@ -3314,6 +3341,8 @@ class Player
     isWerewolfVisible:->@isWerewolf()
     # 妖狐の仲間としてみえるか
     isFoxVisible:->false
+    # 背德以外背德系仲間としてみえるか
+    isPerfidiousVisible:->false
     # 恋人かどうか
     isFriend:->false
     # Complexかどうか
@@ -3342,6 +3371,8 @@ class Player
         draculaBitten: false
         # サンタクロース
         santaclauses: false
+        # 背信者
+        perfidious: false
         # 詐欺師（宇宙人狼）
         spaceWerewolfImposters: false
     }
@@ -3537,6 +3568,7 @@ class Player
     # 占われたとき（結果は別にとられる player:占い元）
     divined:(game,player)->
     whenguarded:(game,player)->
+    successfulGuard:(game)->
     # ちょっかいを出されたとき(jobのとき)
     touched:(game,from)->
     # 選択肢を返す
@@ -3761,6 +3793,62 @@ class Player
 
 class Human extends Player
     type:"Human"
+
+class Hero extends Human
+    type:"Hero"
+    constructor:->
+        super
+        @setFlag {awakened: false, revealed: false, attackResisted: false}
+    getHeroFlag:->
+        {awakened: @flag?.awakened == true, revealed: @flag?.revealed == true, attackResisted: @flag?.attackResisted == true, reason: @flag?.reason, attackFound: @flag?.attackFound, attackFrom: @flag?.attackFrom}
+    getTypeDisp:-> if @flag?.revealed || @flag?.awakened then @type else "Human"
+    getJobDisp:-> if @flag?.revealed || @flag?.awakened then @jobname else @game.i18n.t "roles:jobname.Human"
+    shouldAwakenByCount:(game)-> game.players.filter((x)->!x.dead).length <= Math.ceil game.players.length / 3
+    isAwakened:(game)-> @flag?.awakened || game.getPlayer(@id)?.isCmplType?("HeroAwakened")
+    awaken:(game, reason)->
+        return if @isAwakened game
+        top = game.getPlayer @id
+        return unless top?
+        flag = @getHeroFlag()
+        flag.awakened = true
+        flag.revealed = true
+        flag.reason = reason
+        @setFlag flag
+        diviner = Player.factory "Diviner", game
+        psychic = Player.factory "Psychic", game
+        guard = Player.factory "Guard", game
+        top.transProfile diviner
+        top.transProfile psychic
+        top.transProfile guard
+        if Phase.isNight game.phase
+            diviner.sunset game
+            psychic.sunset game
+            guard.sunset game
+        withDiviner = Player.factory null, game, top, diviner, Complex
+        top.transProfile withDiviner
+        withPsychic = Player.factory null, game, withDiviner, psychic, Complex
+        top.transProfile withPsychic
+        newpl = Player.factory null, game, withPsychic, guard, HeroAwakened
+        top.transProfile newpl
+        top.transform game, newpl, true
+        splashlog game.id, game, {mode:"skill", to:@id, comment: game.i18n.t "roles:Hero.awaken", {name: @name}}
+        game.splashjobinfo [newpl]
+    sunrise:(game)-> @awaken game, "count" if @shouldAwakenByCount game
+    sunset:(game)-> @awaken game, "count" if @shouldAwakenByCount game
+    hasDeadResistance:->true
+    checkDeathResistance:(game, found, from)->
+        if !@flag?.attackResisted && found in ["werewolf", "nineTailedFox", "vampire"]
+            flag = @getHeroFlag()
+            flag.revealed = true
+            flag.attackResisted = true
+            flag.attackFound = found
+            flag.attackFrom = from
+            @setFlag flag
+            game.addGuardLog @id, AttackKind.werewolf, GuardReason.tolerance if Found.isGuardableWerewolfAttack found
+            game.splashjobinfo [game.getPlayer @id]
+            splashlog game.id, game, {mode:"skill", to:@id, comment: game.i18n.t "roles:Hero.resist", {name: @name}}
+            return true
+        false
 class Werewolf extends Player
     type:"Werewolf"
     sunset:(game)->
@@ -3860,6 +3948,12 @@ class Werewolf extends Player
 
 
 
+class DoubleHeadedWolf extends Werewolf
+    type:"DoubleHeadedWolf"
+    fortuneResult: FortuneResult.DoubleHeadedWolf
+    psychicResult: PsychicResult.DoubleHeadedWolf
+    werewolfCount:->2
+
 class Diviner extends Player
     type:"Diviner"
     midnightSort: 100
@@ -3876,7 +3970,7 @@ class Diviner extends Player
 
         if (@type == "Diviner" || @type == "Hitokotonushinokami") && game.day == 1 && game.rule.firstnightdivine == "auto"
             # 自動白通知
-            targets2 = targets.filter (x)=> x.id != @id && x.getFortuneResult(game) == FortuneResult.human && x.id != "替身君" && !x.isJobType("Fox") && !x.isJobType("XianFox") && !x.isJobType("NightRabbit") && !x.isJobType("Trickster") && !x.isJobType("VariationFox") && !x.isJobType("Actress")
+            targets2 = targets.filter (x)=> x.id != @id && x.getFortuneResult(game) == FortuneResult.human && x.id != "替身君" && !x.isJobType("Fox") && !x.isJobType("NineTailedFox") && !x.isJobType("XianFox") && !x.isJobType("NightRabbit") && !x.isJobType("Trickster") && !x.isJobType("VariationFox") && !x.isJobType("Actress") && !x.isJobType("FoxMatchmaker")
             if targets2.length > 0
                 # ランダムに決定
                 log=
@@ -3948,6 +4042,278 @@ class Diviner extends Player
             to:@id
             comment:r.result
         splashlog game.id,game,log
+class SuperDiviner extends Diviner
+    type:"SuperDiviner"
+    midnightSort:80
+    sleeping:->@flag[0].NormalDivinerTarget? || @scapegoat
+    jobdone:->@flag[0].NormalDivinerTarget? && @flag[0].SuperDivinerUsed
+    constructor:->
+        super
+        @setFlag [{
+            # type of action this night
+            type: null
+            # day on which this action is taken.
+            day: 0
+            # whether extra divination is already used.
+            SuperDivinerUsed: false
+            # normal divination target
+            NormalDivinerTarget: null
+            # extra divination target
+            SuperDivinerTarget: null
+            # divination results array
+            results: []
+        }]
+    job:(game,playerid,query)->
+        pl=game.getPlayer playerid
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+
+        type = query.commandname
+        unless type in ["SuperDiviner", "NormalDiviner"]
+            return game.i18n.t "error.common.invalidQuery"
+
+        # cannot use extra divination more than once
+        if @flag[0].SuperDivinerUsed && type == "SuperDiviner"
+            return game.i18n.t "error.common.alreadyUsed"
+
+        # Set target based on type
+        if type == "NormalDiviner"
+            @flag[0].NormalDivinerTarget = playerid
+        else if type == "SuperDiviner"
+            @flag[0].SuperDivinerUsed = true
+            @flag[0].SuperDivinerTarget = playerid
+
+        pl.touched game,@id
+        log=
+            mode:"skill"
+            to:@id
+            comment: if type == "NormalDiviner"
+                game.i18n.t "roles:Diviner.select", {name: @name, target: pl.name}
+            else
+                game.i18n.t "roles:SuperDiviner.SuperSelect", {name: @name, target: pl.name}
+        splashlog game.id,game,log
+        if game.rule.divineresult=="immediate"
+            if type == "NormalDiviner"
+                @setTarget @flag[0].NormalDivinerTarget
+                @dodivine game
+                @showdivineresult game, @flag[0].NormalDivinerTarget
+            else
+                savedTarget = @target
+                @setTarget @flag[0].SuperDivinerTarget
+                @dodivine game
+                @showdivineresult game, @flag[0].SuperDivinerTarget
+                @setTarget savedTarget
+        null
+    #占い実行 - Override to use results array in flag[0]
+    dodivine:(game)->
+        target = game.skillTargetHook.get @target
+        origp = game.getPlayer @target
+        p=game.getPlayer target
+        if p? && origp?
+            # show original target's name even if target is forced to another player.
+            @flag[0].results.push {
+                player: origp.publicinfo()
+                result: game.i18n.t "roles:Diviner.resultlog", {name: @name, target: origp.name, result: game.i18n.t "roles:fortune.#{p.getFortuneResult(game)}"}
+                day: game.day
+            }
+            @addGamelog game,"divine",p.type,@target    # 占った
+    getOpenForms:(game)->
+        if !@dead && Phase.isNight(game.phase)
+            res = []
+            if(!@flag[0].NormalDivinerTarget)
+                # manually generate form.
+                res.push {
+                    type: "NormalDiviner"
+                    options: @makeJobSelection game, false
+                    formType: FormType.required
+                    objid: @objid
+                }
+            if(!@flag[0].SuperDivinerUsed)
+                res.push {
+                    type: "SuperDiviner"
+                    options: @makeJobSelection game, false
+                    formType: FormType.optionalOnce
+                    objid: @objid
+                    data:
+                        SuperDivinerUsed: @flag[0].SuperDivinerUsed
+                }
+            return res
+        else
+            return super
+    isFormTarget:(jobtype)->
+        (jobtype in ["NormalDiviner", "SuperDiviner"]) || super
+    # Override to use results array in flag[0]
+    showdivineresult:(game, target)->
+        results = @flag[0].results
+        return unless results?.length > 0
+        r = results[results.length-1]
+        return unless r?
+        # result of which day to show?
+        resday = (
+            if game.rule.divineresult == "immediate"
+                game.day
+            else
+                game.day - 1)
+        return if r.day != resday
+
+        log=
+            mode:"skill"
+            to:@id
+            comment:r.result
+        splashlog game.id,game,log
+    midnight:(game,midnightSort)->
+        savedTarget = @target
+        unless game.rule.divineresult=="immediate"
+            # 执行普通占卜
+            if @flag[0].NormalDivinerTarget?
+                @setTarget @flag[0].NormalDivinerTarget
+                @dodivine game
+            # 执行额外占卜
+            if @flag[0].SuperDivinerTarget?
+                @setTarget @flag[0].SuperDivinerTarget
+                @dodivine game
+        @setTarget savedTarget
+        @divineeffect game
+
+    sunrise:(game)->
+        # Call parent sunrise for base class behavior, but skip the showdivineresult part
+        Player.prototype.sunrise.call @, game
+        unless game.rule.divineresult=="immediate"
+            resday = game.day - 1
+            # 分别显示普通占卜和额外占卜的结果（从 results 数组中读取）
+            for r in @flag[0].results
+                continue if r.day != resday
+                log =
+                    mode:"skill"
+                    to:@id
+                    comment:r.result
+                splashlog game.id,game,log
+            # 重置目标
+            @flag[0].NormalDivinerTarget = null
+            @flag[0].SuperDivinerTarget = null
+    sunset:(game)->
+        super
+        # 重置目标
+        @flag[0].NormalDivinerTarget = null
+        @flag[0].SuperDivinerTarget = null
+        # 占い対象
+        targets = game.players.filter (x)->!x.dead
+
+        if (@type == "SuperDiviner" || @type == "Hitokotonushinokami") && game.day == 1 && game.rule.firstnightdivine == "auto"
+            # 自動白通知
+            targets2 = targets.filter (x)=> x.id != @id && [FortuneResult.human, FortuneResult.werewolf].includes(x.getFortuneResult(game)) && x.id != "替身君" && !x.isJobType("Fox") && !x.isJobType("XianFox") && !x.isJobType("NightRabbit") && !x.isJobType("Trickster") && !x.isJobType("VariationFox") && !x.isJobType("Actress") && !x.isJobType("SuperFox") && !x.isJobType("FoxMatchmaker")
+            if targets2.length > 0
+                # ランダムに決定
+                log=
+                    mode:"skill"
+                    to:@id
+                    comment:game.i18n.t "roles:Diviner.auto", {name: @name}
+                splashlog game.id,game,log
+
+                r=Math.floor Math.random()*targets2.length
+                @job game,targets2[r].id,{
+                    commandname:"NormalDiviner"
+                }
+                return
+    divineeffect:(game)->
+        # 对普通占卜目标执行效果
+        if @flag[0].NormalDivinerTarget?
+            p=game.getPlayer game.skillTargetHook.get @flag[0].NormalDivinerTarget
+            if p?
+                p.divined game,this
+        # 对额外占卜目标执行效果
+        if @flag[0].SuperDivinerTarget?
+            p2=game.getPlayer game.skillTargetHook.get @flag[0].SuperDivinerTarget
+            if p2?
+                p2.divined game,this
+
+
+
+class MumouDiviner extends Player
+    type:"MumouDiviner"
+    midnightSort: 100
+    formType: FormType.required
+    constructor:->
+        super
+        @setFlag []
+    sunset:(game)->
+        super
+        @setTarget null
+        targets = game.players.filter (x)->!x.dead
+
+        if @type == "MumouDiviner" && game.day == 1 && game.rule.firstnightdivine == "auto"
+            targets2 = targets.filter (x)=> x.id != @id && [FortuneResult.human, FortuneResult.werewolf].includes(x.getFortuneResult(game)) && x.id != "替身君" && !x.isJobType("Fox") && !x.isJobType("XianFox") && !x.isJobType("NightRabbit") && !x.isJobType("Trickster") && !x.isJobType("VariationFox") && !x.isJobType("Actress")
+            if targets2.length > 0
+                log=
+                    mode:"skill"
+                    to:@id
+                    comment:game.i18n.t "roles:Diviner.auto", {name: @name}
+                splashlog game.id,game,log
+
+                r=Math.floor Math.random()*targets2.length
+                @job game,targets2[r].id,{}
+                return
+    sleeping:->@target?
+    job:(game,playerid)->
+        pl=game.getPlayer playerid
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+
+        @setTarget playerid
+        pl.touched game,@id
+        log=
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:Diviner.select", {name: @name, target: pl.name}
+        splashlog game.id,game,log
+        if game.rule.divineresult=="immediate"
+            @dodivine game
+            @showdivineresult game, @target
+        null
+    sunrise:(game)->
+        super
+        unless game.rule.divineresult=="immediate"
+            @showdivineresult game, @target
+
+    midnight:(game,midnightSort)->
+        unless game.rule.divineresult=="immediate"
+            @dodivine game
+        @divineeffect game
+        newpl = Player.factory null, game, @, null, NoGuarded
+        @transProfile newpl
+        newpl.cmplFlag = @id
+        @transform game, newpl, true
+    divineeffect:(game)->
+        p=game.getPlayer game.skillTargetHook.get @target
+        if p?
+            p.divined game,this
+    dodivine:(game)->
+        target = game.skillTargetHook.get @target
+        origp = game.getPlayer @target
+        p=game.getPlayer target
+        if p? && origp?
+            @setFlag @flag.concat {
+                player: origp.publicinfo()
+                result: game.i18n.t "roles:Diviner.resultlog", {name: @name, target: origp.name, result: game.i18n.t "roles:fortune.#{p.getFortuneResult(game)}"}
+                day: game.day
+            }
+            @addGamelog game,"divine",p.type,@target
+    showdivineresult:(game, target)->
+        r=@flag[@flag.length-1]
+        return unless r?
+        resday = (
+            if game.rule.divineresult == "immediate"
+                game.day
+            else
+                game.day - 1)
+        return if r.day != resday
+
+        log=
+            mode:"skill"
+            to:@id
+            comment:r.result
+        splashlog game.id,game,log
+
 class Psychic extends Player
     type:"Psychic"
     constructor:->
@@ -3992,6 +4358,51 @@ class Psychic extends Player
                 result: PsychicResult.renderToString x.getPsychicResult(), game.i18n
             }) + "\n"
         return false
+
+# 真·灵能者 - 拥有念杀护卫能力的灵能者
+class MindPsychic extends Psychic
+    type:"MindPsychic"
+    formType: FormType.optional
+    hasDeadResistance:->true
+    checkDeathResistance:(game, found, from)->
+        return super unless found == "nekikill"
+        true
+    sleeping:-> true
+    jobdone:(game)-> @target?
+    sunset:(game)->
+        super
+        @setTarget null
+    job:(game,playerid)->
+        guardpl = game.getPlayer playerid
+        unless guardpl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        @setTarget playerid
+        log=
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:MindPsychic.curseGuardSelect", {name: @name, target: guardpl.name}
+        splashlog game.id,game,log
+        null
+    midnight:(game,midnightSort)->
+        super
+        newpl = Player.factory null, game, @, null, GuardedByPsychic
+        @transProfile newpl
+        newpl.cmplFlag = @id
+        @transform game, newpl, true
+        guardTarget = game.getPlayer game.skillTargetHook.get @target
+        return unless guardTarget?
+        currentGuardTarget = game.getPlayer @target
+        unless currentGuardTarget? && !currentGuardTarget.dead
+            return
+        newpl2 = Player.factory null, game, guardTarget, null, GuardedByPsychic
+        guardTarget.transProfile newpl2
+        newpl2.cmplFlag = @id
+        guardTarget.transform game, newpl2, true
+        newpl2.touched game, @id
+        null
+    sunrise:(game)->
+        super
+        @setTarget null
 
 class Madman extends Player
     type:"Madman"
@@ -4048,6 +4459,207 @@ class Guard extends Player
         pl.transform game,newpl,true
         newpl.touched game,@id
         null
+
+class Paladin extends Guard
+    type:"Paladin"
+    midnightSort: 70
+    divined:(game,player)->
+        super
+        @die game,"curse", player.id
+        player.addGamelog game,"cursekill",null,@id
+class OldGuard extends Guard
+    type:"OldGuard"
+    midnightSort:79
+    getGuardState: ->
+        if @flag? && "object" == typeof @flag && !Array.isArray(@flag)
+            @flag
+        else
+            {
+                lastGuard: @flag ? null
+                agedDay: null
+            }
+    sunset:(game)->
+        state = @getGuardState()
+        @setTarget null
+
+        if game.day==1 && game.rule.scapegoat != "off"
+            @setTarget ""
+            return
+        pls = game.players.filter (pl)=>
+            if game.rule.guardmyself!="ok" && pl.id == @id
+                return false
+            if game.rule.consecutiveguard=="no" && pl.id == state.lastGuard
+                return false
+            return !pl.dead
+
+        if pls.length == 0
+            @setTarget ""
+            return
+    job:(game,playerid)->
+        state = @getGuardState()
+        if playerid==@id && game.rule.guardmyself!="ok"
+            return game.i18n.t "error.common.noSelectSelf"
+        else if playerid==state.lastGuard && game.rule.consecutiveguard=="no"
+            return game.i18n.t "roles:Guard.noGuardSame"
+        else
+            @setTarget playerid
+            @setFlag Object.assign {}, state, {
+                lastGuard: playerid
+            }
+
+            pl=game.getPlayer(playerid)
+            log=
+                mode:"skill"
+                to:@id
+                comment: game.i18n.t "roles:Guard.select", {name: @name, target: pl.name}
+            splashlog game.id,game,log
+            null
+    successfulGuard:(game)->
+        state = @getGuardState()
+        return if state.agedDay?
+        @setFlag Object.assign {}, state, {
+            agedDay: game.day + 1
+        }
+    beforebury:(game, type)->
+        return false if @dead
+        return false unless type == "day"
+        state = @getGuardState()
+        return false unless state.agedDay == game.day
+
+        @die game, "infirm"
+        @setFlag Object.assign {}, state, {
+            agedDay: null
+        }
+        return false
+
+class SuperGuard extends Guard
+    type:"SuperGuard"
+    midnightSort:80
+    formType: FormType.optional
+    hasDeadResistance:->true
+    sleeping:->@target? || @scapegoat
+    jobdone:(game)-> @target? && (@target == "" || @flag[0].SuperGuardUsed)
+    constructor:->
+        super
+        @setFlag [{
+            # type of action this night
+            type: null
+            # day on which this action is taken.
+            day: 0
+            # whether kill is already used.
+            SuperGuardUsed: false
+            SuperGuardTarget: null
+            lastGuard: null
+        }]
+    sunset:(game)->
+        @setTarget null
+        @flag[0].SuperGuardTarget = null
+
+        if game.day==1 && game.rule.scapegoat != "off"
+            @setTarget ""
+            return
+
+        if @makeJobSelection(game, false).length == 0
+            @setTarget ""
+            return
+    job:(game, playerid, query)->
+        type = query.commandname
+        unless type in ["SuperGuard", "NormalGuard"]
+            return game.i18n.t "error.common.invalidQuery"
+
+        if @flag[0].SuperGuardUsed && type == "SuperGuard"
+            return game.i18n.t "error.common.alreadyUsed"
+
+        pl = game.getPlayer playerid
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        if pl.id == @id
+            return game.i18n.t "error.common.noSelectSelf"
+        if pl.dead
+            return game.i18n.t "error.common.alreadyDead"
+        if game.rule.consecutiveguard=="no" && playerid==@flag[0].lastGuard
+            return game.i18n.t "roles:Guard.noGuardSame"
+
+        if type == "SuperGuard"
+            @flag[0].SuperGuardUsed = true
+            @flag[0].SuperGuardTarget = playerid
+        else
+            @setTarget playerid
+            @flag[0].lastGuard = playerid
+
+        # touch targeted player.
+        pl.touched game, @id
+        # show selection log.
+        log=
+            mode:"skill"
+            to:@id
+            comment: if type == "NormalGuard"
+                game.i18n.t "roles:Guard.select", {name: @name, target: pl.name}
+            else
+                game.i18n.t "roles:SuperGuard.SuperSelect", {name: @name, target: pl.name}
+
+        splashlog game.id,game,log
+        null
+    midnight:(game)->
+        if @target? && @target != ""
+            pl = game.getPlayer game.skillTargetHook.get @target
+            if pl?
+                pl.whenguarded game,this
+                newpl=Player.factory null, game, pl,null,Guarded
+                pl.transProfile newpl
+                newpl.cmplFlag=@id
+                pl.transform game,newpl,true
+                newpl.touched game,@id
+
+        if @flag[0].SuperGuardTarget != null
+            superpl = game.getPlayer game.skillTargetHook.get @flag[0].SuperGuardTarget
+            unless superpl?
+                return
+            superpl.whenguarded game, this
+            newpl = Player.factory null, game, superpl, null, Guarded
+            superpl.transProfile newpl
+            newpl.cmplFlag = @id
+            superpl.transform game, newpl, true
+            newpl.touched game, @id
+            @flag[0].SuperGuardTarget = null
+        null
+
+    getOpenForms:(game)->
+            if !@dead && Phase.isNight(game.phase)
+                return [] if @target == ""
+                res = []
+                unless @target?
+                    # manually generate form.
+                    res.push {
+                        type: "NormalGuard"
+                        options: @makeJobSelection game, false
+                        formType: FormType.required
+                        objid: @objid
+                    }
+                if(!@flag[0].SuperGuardUsed)
+                    res.push {
+                        type: "SuperGuard"
+                        options: @makeJobSelection game, false
+                        formType: FormType.optionalOnce
+                        objid: @objid
+                        # give data of whether kill is already used.
+                        data:
+                            SuperGuardUsed: @flag[0].SuperGuardUsed
+                    }
+                return res
+            else
+                return super
+    isFormTarget:(jobtype)->
+        (jobtype in ["NormalGuard", "SuperGuard"]) || super
+    makeJobSelection:(game, isvote)->
+        res = Player.prototype.makeJobSelection.call this, game, isvote
+        return res if isvote
+        res.filter (obj)=>
+            return false if obj.value == @id
+            return false if game.rule.consecutiveguard=="no" && obj.value == @flag[0].lastGuard
+            true
+
+
 class Couple extends Player
     type:"Couple"
     makejobinfo:(game,result)->
@@ -4079,6 +4691,7 @@ class Fox extends Player
         res = super
         # 妖狐は仲間が分かる
         res.foxes = true
+        res.perfidious = true
         res
     divined:(game,player)->
         super
@@ -4091,6 +4704,107 @@ class Fox extends Player
         else super
     getSpeakChoice:(game)->
         ["fox"].concat super
+
+class NineTailedFox extends Fox
+    type:"NineTailedFox"
+    midnightSort:105
+    formType: FormType.optionalOnce
+    constructor:->
+        super
+        @setFlag null
+    sleeping:->true
+    jobdone:(game)-> @flag? || @target?
+    sunset:(game)->
+        super
+        @setTarget null
+        if game.day == 1 && game.rule.scapegoat != "off"
+            @setTarget ""
+            return
+    makeJobSelection:(game,isvote)->
+        res = Player.prototype.makeJobSelection.call this, game, isvote
+        return res if isvote
+        res.filter (obj)=> obj.value != @id
+    job:(game,playerid)->
+        if game.day == 1 && game.rule.scapegoat != "off"
+            return game.i18n.t "error.common.cannotUseSkillNow"
+        if @flag?
+            return game.i18n.t "error.common.alreadyUsed"
+        if playerid == @id
+            return game.i18n.t "error.common.noSelectSelf"
+        pl=game.getPlayer playerid
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        if pl.dead
+            return game.i18n.t "error.common.invalidSelection"
+        @setTarget playerid
+        @setFlag true
+        pl.touched game,@id
+        log=
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:NineTailedFox.select", {name: @name, target: pl.name}
+        splashlog game.id,game,log
+        null
+    midnight:(game,midnightSort)->
+        return unless @target?
+        target = game.getPlayer game.skillTargetHook.get @target
+        return unless target?
+        return if target.dead
+        target.die game, "nineTailedFox", @id
+        if target.dead && target.found == "nineTailedFox"
+            @addGamelog game,"nineTailedFoxAttack",target.type,target.id
+
+class FoxMatchmaker extends Fox
+    type:"FoxMatchmaker"
+    team:"Fox"
+    formType: FormType.required
+    constructor:->
+        super
+        @setFlag null
+        @setTarget null
+    sunset:(game)->
+        if game.day>=2 && @flag? && !Array.isArray @flag
+            @setFlag ""
+            @setTarget ""
+        else if !@flag? || !Array.isArray @flag
+            @setFlag null
+            @setTarget null
+    sleeping:-> Array.isArray(@flag) || @flag? && @target?
+    getVisibilityQuery:-> Player.prototype.getVisibilityQuery.call this
+    isFoxVisible:->false
+    isListener:(game,log)-> Player.prototype.isListener.call this, game, log
+    getSpeakChoice:(game)-> Player.prototype.getSpeakChoice.call this, game
+    isWinner:(game, team)-> team in ["Friend", "Fox"]
+    hasMatchedLover:(playerid)->
+        return false unless playerid?
+        return playerid in @flag if Array.isArray @flag
+        playerid == @flag || playerid == @target
+    job:(game,playerid,query)->
+        if Array.isArray(@flag) || @flag? && @target?
+            return game.i18n.t "error.common.alreadyUsed"
+        pl=game.getPlayer playerid
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        unless @flag?
+            @setFlag playerid
+            splashlog game.id,game,{mode:"skill",to:@id,comment:game.i18n.t "roles:FoxMatchmaker.select1",{name:@name,target:pl.name}}
+            return null
+        if @flag==playerid
+            return game.i18n.t "roles:Cupid.noSelectTwice"
+        @setTarget playerid
+        loverIds=[@flag,@target]
+        plpls=loverIds.map (id)->game.getPlayer id
+        @setFlag loverIds
+        for pl,i in plpls
+            pl.touched game,@id
+            newpl=Player.factory null,game,pl,null,FoxMatchmakerFriend
+            newpl.cmplFlag=plpls[1-i].id
+            pl.transProfile newpl
+            pl.transform game,newpl,true
+            splashlog game.id,game,{mode:"skill",to:@id,comment:game.i18n.t "roles:FoxMatchmaker.select",{name:@name,target:newpl.name}}
+            splashlog game.id,game,{mode:"skill",to:newpl.id,comment:game.i18n.t "roles:FoxMatchmaker.become",{name:newpl.name}}
+        game.splashjobinfo loverIds.map (id)->game.getPlayer id
+        null
 
 
 class Poisoner extends Player
@@ -4107,7 +4821,7 @@ class Poisoner extends Player
                 canbedead = canbedead.filter (x)->x.id==from
             else
                 canbedead=canbedead.filter (x)->x.isWerewolf() && x.isAttacker()
-        else if found=="vampire"
+        else if found in ["vampire", "nineTailedFox"]
             canbedead=canbedead.filter (x)->x.id==from
         return if canbedead.length==0
         r=Math.floor Math.random()*canbedead.length
@@ -4152,6 +4866,80 @@ class TinyFox extends Diviner
             }
             @addGamelog game,"foxdivine",success,p.id
     divineeffect:(game)->
+
+
+class SuperFox extends Fox
+    type:"SuperFox"
+    team:"Fox"
+    midnightSort:100
+    formType: FormType.optionalOnce
+    isFox:->true
+    sleeping:(game)->true
+    chooseJobDay:(game)->true
+    jobdone:(game)->
+        if Phase.isDay(game.phase)
+            @flag?
+        else
+            super
+    sunrise:(game)->
+        super
+        # 一次性目标，防止每晚重复施加威吓
+        @setTarget null
+    job:(game,playerid,query)->
+        if @flag
+            return game.i18n.t "error.common.alreadyUsed"
+        unless Phase.isDay(game.phase)
+            return game.i18n.t "error.common.cannotUseSkillNow"
+        if playerid==@id
+            return game.i18n.t "error.common.noSelectSelf"
+        pl=game.getPlayer playerid
+        # pl.touched game,@id
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        @setTarget playerid
+        @setFlag {
+            target: playerid
+        }
+        log=
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:SuperFox.select", {name: @name, target: pl.name}
+        splashlog game.id,game,log
+        null
+    sunset:(game)->
+        target = @flag?.target ? @target
+        t=game.getPlayer target
+        unless t?
+            return super
+        if t.dead
+            return super
+
+        # 威嚇して能力無しにする
+        @addGamelog game,"threaten",t.type,target
+        # 複合させる
+
+        log=
+            mode:"skill"
+            to:t.id
+            comment: game.i18n.t "roles:SuperFox.affected", {name: t.name}
+        splashlog game.id,game,log
+
+        newpl=Player.factory null, game, t,null,Threatened  # カウンセリングされた
+        t.transProfile newpl
+        t.transform game,newpl,true
+
+        super
+    getOpenForms:(game)->
+        res = []
+        if Phase.isDay(game.phase) && !@dead && !@flag?
+            #昼の能力選択可能
+            res.push {
+                type: "SuperFox"
+                options: @makeJobSelection game, false
+                formType: FormType.optionalOnce
+                objid: @objid
+            }
+        return res
 
 
 class Bat extends Player
@@ -4788,11 +5576,48 @@ class Immoral extends Player
         unless game.players.some((x)->!x.dead && x.isFox())
             @die game, "foxsuicide"
         return false
+    isPerfidiousVisible:->false
     # 背徳者は妖狐が分かる
     getVisibilityQuery:->
         res = super
         res.foxes = true
+        res.perfidious = true
         res
+
+class Perfidious extends Player
+    type:"Perfidious"
+    team:"Fox"
+    beforebury:(game)->
+        return false if @dead
+        unless game.players.some((x)->!x.dead && x.isFox())
+            @die game, "foxsuicide"
+        return false
+    isPerfidiousVisible:->true
+    getVisibilityQuery:->
+        res = super
+        res.foxes = true
+        res
+
+class Heretic extends Player
+    type:"Heretic"
+    team:"Fox"
+    beforebury:(game)->
+        return false if @dead
+        unless game.players.some((x)->!x.dead && x.isFox())
+            @die game, "foxsuicide"
+        return false
+    isPerfidiousVisible:->true
+    getVisibilityQuery:->
+        res = super
+        res.foxes = true
+        res.perfidious = true
+        res
+    isListener:(game,log)->
+        if log.mode=="fox"
+            true
+        else super
+    getSpeakChoice:(game)->
+        ["fox"].concat super
 class Devil extends Player
     type:"Devil"
     team:"Devil"
@@ -4841,6 +5666,23 @@ class ToughGuy extends Player
             @setFlag null
             unless @dead
                 @setDead true,"werewolf"
+
+class Elder extends Player
+    type:"Elder"
+    hasDeadResistance:->true
+    checkDeathResistance:(game, found, from)->
+        if (Found.isNormalWerewolfAttack(found) || Found.isNormalVampireAttack(found) || found == "nineTailedFox") && !@flag?
+            @setFlag "bitten"
+            attacker = game.getPlayer from
+            if attacker?
+                log =
+                    mode:"skill"
+                    to:attacker.id
+                    comment: game.i18n.t "roles:Elder.attackerNotice", {target: @name}
+                splashlog game.id, game, log
+            return true
+        false
+
 class Cupid extends Player
     type:"Cupid"
     team:"Friend"
@@ -5619,6 +6461,17 @@ class Teruteru extends Player
                 }
             splashlog game.id, game, log
 
+class ButaOtoko extends Player
+    type:"ButaOtoko"
+    team:""
+    checkDeathResistance:(game, found)->
+        if Found.isNormalWerewolfAttack found
+            @setFlag "win"
+            return false
+        else
+            return false
+    isWinner:(game,team)->@dead && @flag=="win"
+
 class OccultMania extends Player
     type:"OccultMania"
     midnightSort:102
@@ -5961,7 +6814,7 @@ class Dictator extends Player
         @setTarget playerid    # 処刑する人
         log=
             mode:"system"
-            comment: game.i18n.t "roles:Dictator.select", {name: @name, target: pl.name}
+            comment: game.i18n.t "roles:#{@type}.select", {name: @name, target: pl.name}
         splashlog game.id,game,log
         @setFlag true  # 使用済
         # その場で殺す!!!
@@ -5969,7 +6822,7 @@ class Dictator extends Player
         # 天黑了
         log=
             mode:"system"
-            comment: game.i18n.t "roles:Dictator.sunset", {name: @name}
+            comment: game.i18n.t "roles:#{@type}.sunset", {name: @name}
         splashlog game.id,game,log
         # XXX executeの中と同じことが書いてある
         game.bury "punish"
@@ -5980,6 +6833,9 @@ class Dictator extends Player
                 return if game.judge()
             game.nextturn()
         return null
+class MadDictator extends Dictator
+    type:"MadDictator"
+    team:"Werewolf"
 class SeersMama extends Player
     type:"SeersMama"
     sleeping:->true
@@ -6492,6 +7348,32 @@ class GreedyWolf extends Werewolf
             # なしでOK!
             return true
         return super
+class SuperWerewolf extends Werewolf
+    type:"SuperWerewolf"
+    canUseSuperWerewolf:(game)-> game.day >= 2
+    sleeping:(game)->game.werewolf_target_remain<=0
+    jobdone:(game)->game.werewolf_target_remain<=0 && (@flag || !@canUseSuperWerewolf(game))
+    job:(game,playerid,query)->
+        return super if query.jobtype!="SuperWerewolf"
+        return game.i18n.t "error.common.alreadyUsed" if @flag
+        return game.i18n.t "error.common.cannotUseSkillNow" unless @canUseSuperWerewolf(game)
+        return game.i18n.t "error.common.cannotUseSkillNow" if game.werewolf_target_remain+game.werewolf_target.length==0
+        @setFlag true
+        splashlog game.id,game,{mode:"wolfskill",comment:game.i18n.t "roles:SuperWerewolf.select", {name: @name}}
+        game.werewolf_target_remain++
+        game.werewolf_flag.push "SuperWerewolf_#{@id}"
+        game.splashjobinfo game.players.filter (x)=>x.id!=@id && x.isWerewolf()
+        null
+    getOpenForms:(game)->
+        res = super
+        if Phase.isNight(game.phase) && !@flag && @canUseSuperWerewolf(game)
+            res.push {type:"SuperWerewolf",options:[],formType:FormType.optionalOnce,objid:@objid}
+        res
+    makeJobSelection:(game,isvote)->
+        if !isvote && @sleeping(game) && !@jobdone(game) then [] else super
+    checkJobValidity:(game,query)->
+        return true if query.jobtype=="SuperWerewolf"
+        super
 class FascinatingWolf extends Werewolf
     type:"FascinatingWolf"
     sleeping:(game)->super && @flag?
@@ -6635,6 +7517,29 @@ class ToughWolf extends Werewolf
                     objid: @objid
                 }
         return res
+
+class LastStandWolf extends Werewolf
+    type:"LastStandWolf"
+    job:(game,playerid,query)->
+        return super if query.jobtype!="LastStandWolf"
+        return game.i18n.t "error.common.alreadyUsed" if @flag
+        alivewolves = game.players.filter (x)-> !x.dead && x.isWerewolf()
+        return game.i18n.t "error.common.cannotUseSkillNow" unless alivewolves.length == 1 && alivewolves[0].id == @id
+        res=super
+        return res if res?
+        @setFlag true
+        game.werewolf_flag.push "LastStandWolf_#{@id}"
+        tp=game.getPlayer playerid
+        return game.i18n.t "error.common.nonexistentPlayer" unless tp?
+        splashlog game.id,game,{mode:"wolfskill",comment:game.i18n.t "roles:LastStandWolf.select", {name: @name, target: tp.name}}
+        null
+    getOpenForms:(game)->
+        res = super
+        unless @sleeping game
+            alivewolves = game.players.filter (x)-> !x.dead && x.isWerewolf()
+            if !@flag && alivewolves.length == 1 && alivewolves[0].id == @id
+                res.push {type:@type,options:@makeJobSelection(game,false),formType:FormType.optionalOnce,objid:@objid}
+        res
 
 class ThreateningWolf extends Werewolf
     type:"ThreateningWolf"
@@ -7470,6 +8375,74 @@ class Pyrotechnist extends Player
         unless isvote
             []
         else super
+
+# 魔法少女
+class MagicalGirl extends Player
+    type:"MagicalGirl"
+    formType: FormType.optionalOnce
+    sleeping:->true
+    constructor:->
+        super
+        @setFlag {
+            used: false
+            day: null
+            kit: null
+        }
+    jobdone:(game)->
+        @flag?.used || !Phase.isDay(game.phase)
+    chooseJobDay:(game)->true
+    makeJobSelection:(game, isvote)->
+        unless isvote
+            return [
+                {
+                    name: game.i18n.t "roles:MagicalGirl.kit.Diviner"
+                    value: "Diviner"
+                }
+                {
+                    name: game.i18n.t "roles:MagicalGirl.kit.Psychic"
+                    value: "Psychic"
+                }
+                {
+                    name: game.i18n.t "roles:MagicalGirl.kit.Guard"
+                    value: "Guard"
+                }
+            ]
+        else
+            super
+    job:(game, playerid)->
+        if @flag?.used
+            return game.i18n.t "error.common.alreadyUsed"
+        unless Phase.isDay(game.phase)
+            return game.i18n.t "error.common.cannotUseSkillNow"
+        unless playerid in ["Diviner","Psychic","Guard"]
+            return game.i18n.t "error.common.invalidSelection"
+
+        @setFlag {
+            used: true
+            day: game.day
+            kit: playerid
+        }
+        top = game.getPlayer @id
+        unless top?
+            return game.i18n.t "error.common.nonexistentPlayer"
+
+        # 当晚附加一次性套装
+        sub = Player.factory playerid, game
+        top.transProfile sub
+        newpl = Player.factory null, game, top, sub, MagicalGirlKit
+        top.transProfile newpl
+        top.transform game, newpl, true
+
+        log=
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:MagicalGirl.select", {
+                name: @name
+                kit: game.i18n.t("roles:MagicalGirl.kit.#{playerid}")
+            }
+        splashlog game.id,game,log
+        game.splashjobinfo [newpl]
+        null
 
 # パン屋
 class Baker extends Player
@@ -9363,7 +10336,7 @@ class Satori extends Diviner
 
         if @type == "Satori" && game.day == 1 && game.rule.firstnightdivine == "auto"
             # 自動白通知
-            targets2 = targets.filter (x)=> x.id != @id && x.getFortuneResult(game) == FortuneResult.human && x.id != "替身君" && !x.isJobType("Fox") && !x.isJobType("XianFox") && !x.isJobType("NightRabbit") && !x.isJobType("Trickster") && !x.isJobType("VariationFox") && !x.isJobType("Actress") && !x.isJobType("BigWolf") && !x.isJobType("Diviner")
+            targets2 = targets.filter (x)=> x.id != @id && x.getFortuneResult(game) == FortuneResult.human && x.id != "替身君" && !x.isJobType("Fox") && !x.isJobType("NineTailedFox") && !x.isJobType("XianFox") && !x.isJobType("NightRabbit") && !x.isJobType("Trickster") && !x.isJobType("VariationFox") && !x.isJobType("Actress") && !x.isJobType("FoxMatchmaker") && !x.isJobType("BigWolf") && !x.isJobType("Diviner")
             if targets2.length > 0
                 # ランダムに決定
                 log=
@@ -11528,6 +12501,131 @@ class Actress extends Fox
             comment: game.i18n.t "roles:Actress.existence", {name: @name}
         splashlog game.id,game,log
 
+class HimeFox extends Fox
+    type:"HimeFox"
+    team:"Fox"
+    midnightSort: 106
+    formType: FormType.optional
+    isFox:->true
+    constructor:->
+        super
+        @setFlag null
+        @setTarget null
+        @nekikillBlockedLog = false
+        @nekikillFailedLog = false
+    isFormTarget:(jobtype)-> jobtype in ["HimeFox", "NekikillTarget"]
+    checkJobValidity:(game,query)->
+        if query?.jobtype == "HimeFox"
+            pl = game.getPlayer query.target
+            return false unless pl?
+            return !pl.dead && (pl.isJobType("Perfidious") || pl.isJobType("Heretic"))
+        else if query?.jobtype == "NekikillTarget"
+            pl = game.getPlayer query.target
+            return false unless pl?
+            return !pl.dead
+        else
+            return super
+    getOpenForms:(game)->
+        return [] if @dead
+        return [] unless Phase.isNight(game.phase)
+        perfidiousOrHeretic = game.players.filter (x)=>
+            !x.dead && (x.isJobType("Perfidious") || x.isJobType("Heretic"))
+        return [] if perfidiousOrHeretic.length == 0
+        unless @flag?
+            return [{
+                type: @type
+                options: perfidiousOrHeretic.map (pl) -> {name: pl.name, value: pl.id}
+                formType: FormType.optional
+                objid: @objid
+            }]
+        else if @flag? && !@target?
+            alivePlayers = game.players.filter (pl)-> !pl.dead
+            return [{
+                type: "NekikillTarget"
+                options: alivePlayers.map (pl) -> {name: pl.name, value: pl.id}
+                formType: FormType.required
+                objid: @objid
+            }]
+        []
+    sleeping:-> !@flag? || !!@target
+    jobdone:(game)-> @flag? && @target?
+    job:(game, playerId, query)->
+        pl = game.getPlayer playerId
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        if pl.id==@id
+            return game.i18n.t "error.common.noSelectSelf"
+        if !@flag?
+            unless pl.isJobType("Perfidious") || pl.isJobType("Heretic")
+                return game.i18n.t "error.HimeFox.invalidSacrificeTarget"
+            @setFlag playerId
+            splashlog game.id, game, {
+                mode:"skill"
+                to:@id
+                comment: game.i18n.t "roles:HimeFox.selectSacrifice", {name: @name, target: pl.name}
+            }
+        else if !@target?
+            @setTarget playerId
+            sacrificepl = game.getPlayer @flag
+            splashlog game.id, game, {
+                mode:"skill"
+                to:@id
+                comment: game.i18n.t "roles:HimeFox.select", {name: @name, target: pl.name, sacrifice: sacrificepl.name}
+            }
+        else
+            return game.i18n.t "error.common.alreadyUsed"
+        null
+    midnight:(game,midnightSort)->
+        super
+        return unless @flag? && @target?
+        sacrifice = game.getPlayer game.skillTargetHook.get @flag
+        target = game.getPlayer game.skillTargetHook.get @target
+        return unless sacrifice? && target?
+        currentSacrifice = game.getPlayer @flag
+        unless currentSacrifice? && (currentSacrifice.isJobType("Perfidious") || currentSacrifice.isJobType("Heretic"))
+            return
+        currentTarget = game.getPlayer game.skillTargetHook.get @target
+        return unless currentTarget? && !currentTarget.dead
+        if currentTarget?.isCmplType "GuardedByPsychic"
+            guard = game.getPlayer currentTarget.cmplFlag
+            if guard? && !guard.dead
+                guard.addGamelog game, "nekikill", null, @id
+                @nekikillBlockedLog = true
+                return
+        if target.type == "Poisoner" || target.type == "Cat"
+            @die game, "curse", currentTarget.id
+            currentTarget.addGamelog game, "nekikill", null, @id
+            @nekikillFailedLog = true
+            return
+        target.die game, "nekikill", @id
+        @addGamelog game, "nekikill", null, target.id
+        if currentTarget.dead && currentTarget.found == "nekikill" && !sacrifice.dead
+            sacrifice.die game, "sacrificed", @id
+        null
+    sunrise:(game)->
+        super
+        if @nekikillBlockedLog
+            splashlog game.id, game, {mode:"system", comment: game.i18n.t "roles:HimeFox.nekikillBlocked", {}}
+            @nekikillBlockedLog = false
+        if @nekikillFailedLog
+            splashlog game.id, game, {mode:"system", comment: game.i18n.t "roles:HimeFox.nekikillFailed", {}}
+            @nekikillFailedLog = false
+        @setFlag null
+        @setTarget null
+    deadsunrise:(game)->
+        if @nekikillBlockedLog
+            splashlog game.id, game, {mode:"system", comment: game.i18n.t "roles:HimeFox.nekikillBlocked", {}}
+            @nekikillBlockedLog = false
+        if @nekikillFailedLog
+            splashlog game.id, game, {mode:"system", comment: game.i18n.t "roles:HimeFox.nekikillFailed", {}}
+            @nekikillFailedLog = false
+        @setFlag null
+        @setTarget null
+    divined:(game,player)->
+        super
+        @die game,"curse", player.id
+        player.addGamelog game,"cursekill",null,@id
+
 class StraySheep extends Player
     type:"StraySheep"
     midnightSort:79
@@ -11755,6 +12853,31 @@ class RainyBoy extends Madman
         unless isvote
             []
         else super
+
+class WerewolfDescendant extends Madman
+    type: "WerewolfDescendant"
+    getVisibilityQuery:(game)->
+        res = super
+        if game?.rule && game.rule.werewolfdescendant_knows_wolves == "on"
+            res.wolves = true
+        res
+    beforebury:(game, type)->
+        return false if @dead
+        wolves = game.players.filter (pl)-> pl.isWerewolf()
+        unless wolves.every((pl)-> pl.dead)
+            return false
+        newpl = Player.factory "Werewolf", game
+        @transProfile newpl
+        @transferData newpl, true
+        log =
+            mode:"skill"
+            to:@id
+            comment: game.i18n.t "roles:WerewolfDescendant.transform", {name: @name}
+        splashlog game.id, game, log
+        @transform game, newpl, false
+        newpl.sunset game
+        game.splashjobinfo [newpl]
+        false
 
 class DarkPsychic extends Psychic
     type: "DarkPsychic"
@@ -12164,6 +13287,20 @@ class Complex
     getMainJobDisp:(chemicalLeft)->@main.getMainJobDisp(chemicalLeft)
     midnightSort: 100
 
+# 灵能者念杀护卫的复合类 - 只能护卫念杀攻击
+class GuardedByPsychic extends Complex
+    cmplType: "GuardedByPsychic"
+    checkDeathResistance:(game, found, from)->
+        guard = game.getPlayer @cmplFlag
+        unless found == "nekikill"
+            return super
+        guard.addGamelog game, "curseGuard", null, @id
+        true
+    sunrise:(game)->
+        @mcall game, @main.sunrise, game
+        @sub?.sunrise? game
+        @uncomplex game
+
     #@mainのやつを呼ぶ
     mcall:(game,method,args...)->
         if @main.isComplex()
@@ -12252,6 +13389,9 @@ class Complex
     # complexのJobTypeを調べる
     isCmplType:(type)->
         type == @cmplType || @main.isCmplType(type) || @sub?.isCmplType(type)
+    successfulGuard:(game)->
+        @mcall game,@main.successfulGuard,game
+        @sub?.successfulGuard? game
     sunset:(game)->
         @mcall game,@main.sunset,game
         @sub?.sunset? game
@@ -12477,13 +13617,26 @@ class Friend extends Complex    # 恋人
             # みんないっしょ
             result.friends=game.players.filter((x)->x.isFriend()).map (x)->
                 x.publicinfo()
-    isWinner:(game,team)->@getTeam()==team && libgame.checkAliveForJudgement(game, this)
+    isWinner:(game,team)->
+        return true if @getTeam()==team && libgame.checkAliveForJudgement(game, this)
+        getAllMainRoles(this).some (role)-> role.type == "FoxMatchmaker" && role.isWinner game, team
     # 相手のIDは?
     getPartner:->
         if @cmplType=="Friend"
             return @cmplFlag
         else
             return @main.getPartner()
+class FoxMatchmakerFriend extends Friend
+    cmplType:"FoxMatchmakerFriend"
+    getPartner:-> if @cmplType=="FoxMatchmakerFriend" then @cmplFlag else @main.getPartner()
+    isWinner:(game,team)->
+        return true if Friend.prototype.isWinner.call this, game, team
+        if team == "Fox"
+            return game.players.some (pl)=>
+                return false if pl.dead
+                matchmakers = getAllMainRoles(pl).filter (obj)-> obj.hasMatchedLover?
+                matchmakers.some (matchmaker)-> matchmaker.hasMatchedLover @id
+        false
 # 聖職者にまもられた人
 class HolyProtected extends Complex
     # cmplFlag: 護衛元
@@ -12553,6 +13706,7 @@ class Guarded extends Complex
         else
             # 狼に噛まれた場合は耐える
             if guard?
+                guard.successfulGuard game
                 guard.addGamelog game,"GJ",null,@id
                 if game.rule.gjmessage
                     log=
@@ -12716,7 +13870,7 @@ class TrapGuarded extends Complex
             # 反撃する
             canbedead=[]
             ft=game.getPlayer from
-            if found == "vampire"
+            if found in ["vampire", "nineTailedFox"]
                 canbedead=game.players.filter (x)->!x.dead && x.id==from
             else
                 canbedead=game.players.filter (x)->!x.dead && x.isWerewolf() && x.isAttacker()
@@ -12962,7 +14116,23 @@ class WatchingFireworks extends Complex
             return []
         else
             return super
+
+# 魔法少女的一次性套装（仅当晚生效）
+class MagicalGirlKit extends Complex
+    cmplType:"MagicalGirlKit"
+    sunrise:(game)->
+        @mcall game,@main.sunrise,game
+        @sub?.sunrise? game
+        @uncomplex game
+    deadsunrise:(game)->
+        @mcall game,@main.deadsunrise,game
+        @sub?.deadsunrise? game
+        @uncomplex game
+
 # 爆弾魔に爆弾を仕掛けられた人
+class HeroAwakened extends Complex
+    cmplType:"HeroAwakened"
+
 class BombTrapped extends Complex
     # cmplFlag: 護衛元ID
     cmplType:"BombTrapped"
@@ -13901,15 +15071,26 @@ getGame=(id)->
 # 仕事一覧
 jobs=
     Human:Human
+    Hero:Hero
     Werewolf:Werewolf
     Diviner:Diviner
+    SuperDiviner:SuperDiviner
+    MumouDiviner:MumouDiviner
     Psychic:Psychic
+    MindPsychic:MindPsychic
     Madman:Madman
     Guard:Guard
+    Paladin:Paladin
+    SuperGuard:SuperGuard
     Couple:Couple
     Fox:Fox
+    NineTailedFox:NineTailedFox
+    HimeFox:HimeFox
+    SuperFox:SuperFox
+    FoxMatchmaker:FoxMatchmaker
     Poisoner:Poisoner
     BigWolf:BigWolf
+    DoubleHeadedWolf:DoubleHeadedWolf
     TinyFox:TinyFox
     Bat:Bat
     Noble:Noble
@@ -13930,8 +15111,11 @@ jobs=
     Fanatic:Fanatic
     HearMadman:HearMadman
     Immoral:Immoral
+    Perfidious:Perfidious
+    Heretic:Heretic
     Devil:Devil
     ToughGuy:ToughGuy
+    Elder:Elder
     Cupid:Cupid
     Stalker:Stalker
     Cursed:Cursed
@@ -13950,8 +15134,10 @@ jobs=
     Cat:Cat
     Witch:Witch
     Oldman:Oldman
+    OldGuard:OldGuard
     Tanner:Tanner
     Teruteru:Teruteru
+    ButaOtoko:ButaOtoko
     OccultMania:OccultMania
     MinionSelector:MinionSelector
     WolfCub:WolfCub
@@ -13960,6 +15146,7 @@ jobs=
     Thief:Thief
     Dog:Dog
     Dictator:Dictator
+    MadDictator:MadDictator
     SeersMama:SeersMama
     Trapper:Trapper
     WolfBoy:WolfBoy
@@ -13969,9 +15156,11 @@ jobs=
     Counselor:Counselor
     Miko:Miko
     GreedyWolf:GreedyWolf
+    SuperWerewolf:SuperWerewolf
     FascinatingWolf:FascinatingWolf
     SolitudeWolf:SolitudeWolf
     ToughWolf:ToughWolf
+    LastStandWolf:LastStandWolf
     ThreateningWolf:ThreateningWolf
     HolyMarked:HolyMarked
     WanderingGuard:WanderingGuard
@@ -13987,6 +15176,7 @@ jobs=
     DrawGirl:DrawGirl
     CautiousWolf:CautiousWolf
     Pyrotechnist:Pyrotechnist
+    MagicalGirl:MagicalGirl
     Baker:Baker
     Bomber:Bomber
     Blasphemy:Blasphemy
@@ -14086,6 +15276,7 @@ jobs=
     ResidualHaunting:ResidualHaunting
     HouseKeeper: HouseKeeper
     RainyBoy:RainyBoy
+    WerewolfDescendant:WerewolfDescendant
     DarkPsychic:DarkPsychic
     Itako:Itako
     SpaceWerewolfCrew:SpaceWerewolfCrew
@@ -14103,7 +15294,9 @@ jobs=
 
 complexes=
     Complex:Complex
+    HeroAwakened:HeroAwakened
     Friend:Friend
+    FoxMatchmakerFriend:FoxMatchmakerFriend
     HolyProtected:HolyProtected
     CultMember:CultMember
     Guarded:Guarded
@@ -14121,9 +15314,11 @@ complexes=
     PhantomStolen:PhantomStolen
     KeepedLover:KeepedLover
     WatchingFireworks:WatchingFireworks
+    MagicalGirlKit:MagicalGirlKit
     BombTrapped:BombTrapped
     FoxMinion:FoxMinion
     DivineCursed:DivineCursed
+    GuardedByPsychic:GuardedByPsychic
     GotChocolateTrue:GotChocolateTrue
     GotChocolateFalse:GotChocolateFalse
     Blacked:Blacked
@@ -14161,15 +15356,26 @@ complexes=
     # 役職ごとの強さ
 jobStrength=
     Human:5
+    Hero:20
     Werewolf:40
     Diviner:25
+    SuperDiviner:20
     Psychic:15
+    MindPsychic:15
     Madman:10
     Guard:23
+    Paladin:20
+    OldGuard:18
+    SuperGuard:20
     Couple:10
     Fox:25
+    NineTailedFox:30
+    HimeFox:20
+    SuperFox:20
+    FoxMatchmaker:20
     Poisoner:20
     BigWolf:80
+    DoubleHeadedWolf:40
     TinyFox:10
     Bat:10
     Noble:12
@@ -14190,8 +15396,11 @@ jobStrength=
     Fanatic:20
     HearMadman:25
     Immoral:5
+    Perfidious:5
+    Heretic:5
     Devil:20
     ToughGuy:11
+    Elder:18
     Cupid:37
     Stalker:10
     Cursed:2
@@ -14212,6 +15421,7 @@ jobStrength=
     Oldman:4
     Tanner:15
     Teruteru:15
+    ButaOtoko:15
     OccultMania:10
     MinionSelector:0
     WolfCub:70
@@ -14220,6 +15430,7 @@ jobStrength=
     Thief:0
     Dog:7
     Dictator:18
+    MadDictator:18
     SeersMama:15
     Trapper:13
     WolfBoy:11
@@ -14229,9 +15440,11 @@ jobStrength=
     Counselor:25
     Miko:14
     GreedyWolf:60
+    SuperWerewolf:60
     FascinatingWolf:52
     SolitudeWolf:20
     ToughWolf:55
+    LastStandWolf:55
     ThreateningWolf:50
     HolyMarked:6
     WanderingGuard:10
@@ -14247,6 +15460,7 @@ jobStrength=
     DrawGirl:10
     CautiousWolf:45
     Pyrotechnist:20
+    MagicalGirl:20
     Baker:16
     Bomber:23
     Blasphemy:10
@@ -14342,6 +15556,7 @@ jobStrength=
     ResidualHaunting:10
     HouseKeeper: 15
     RainyBoy: 10
+    WerewolfDescendant: 10
     DarkPsychic: 8
     Itako: 15
 
@@ -14793,6 +16008,8 @@ module.exports.actions=(req,res,ss)->
                     # 狐が誰も居ないときは背徳は出ない
                     if Shared.game.categories.Fox.every((j)-> joblist[j]==0)
                         exceptions.push "Immoral"
+                        exceptions.push "Perfidious"
+                        exceptions.push "Heretic"
                     # 吸血鬼の眷属も
                     if joblist.Vampire == 0 && joblist.Dracula == 0
                         exceptions.push "VampireClan"
@@ -14883,8 +16100,8 @@ module.exports.actions=(req,res,ss)->
                         exceptions.push "VampireClan"
 
                     # 妖狐陣営
-                    if frees>0 && (joblist.Fox>0 || joblist.TinyFox > 0 || joblist.XianFox > 0 || joblist.NightRabbit > 0 || joblist.Trickster > 0 || joblist.VariationFox > 0)
-                        if joblist.Fox + joblist.TinyFox + joblist.XianFox + joblist.NightRabbit + joblist.Trickster + joblist.VariationFox == 1
+                    if frees>0 && (countCategory("Fox") > 0)
+                        if countCategory("Fox") == 1
                             if playersnumber>=14
                                 # 1人くらいは…
                                 if Math.random()<0.25 && !nonavs.Immoral
@@ -14892,16 +16109,24 @@ module.exports.actions=(req,res,ss)->
                                     frees--
                                 if playersnumber <= 17
                                     exceptions.push "Immoral"
+                                    exceptions.push "Perfidious"
+                                    exceptions.push "Heretic"
                             else
                                 # サプライズ的に…
                                 if Math.random()<0.06 && !nonavs.Immoral
                                     joblist.Immoral++
                                     frees--
                                 exceptions.push "Immoral"
+                                exceptions.push "Perfidious"
+                                exceptions.push "Heretic"
                         else if playersnumber <= 17
                             exceptions.push "Immoral"
+                            exceptions.push "Perfidious"
+                            exceptions.push "Heretic"
                     else
                         exceptions.push "Immoral"
+                        exceptions.push "Perfidious"
+                        exceptions.push "Heretic"
                     # 恋人陣営
                     if frees>0
                         if 17>=playersnumber>=12
@@ -15380,6 +16605,10 @@ module.exports.actions=(req,res,ss)->
                                     # 鴉がいないと出ない（実質鴉が2配役以上で出現条件を満たす）
                                     if joblist.Raven==0
                                         continue
+                                when "HimeFox"
+                                    # 姫狐出现时必须同时有念缚灵能者
+                                    unless init "MindPsychic", "Human"
+                                        continue
 
                         # 絶対狼はセーフティに関わらず処理を実施する
                         if job == "AbsoluteWolf"
@@ -15603,6 +16832,7 @@ module.exports.actions=(req,res,ss)->
             "hunter_lastattack",
             "poisonwolf",
             "friendssplit",
+            "werewolfdescendant_knows_wolves",
             "quantumwerewolf_table","quantumwerewolf_dead","quantumwerewolf_diviner","quantumwerewolf_firstattack","yaminabe_hidejobs","yaminabe_safety",
             "hide_singleton_teams"
             ]
@@ -16167,6 +17397,9 @@ writeGlobalJobInfo = (game, player, result={})->
         # 詐欺師（宇宙人狼）
         if vq.spaceWerewolfImposters
             result.spaceWerewolfImposters = game.players.filter((x)->x.isJobType "SpaceWerewolfImposter").map (x)->
+                x.publicinfo()
+        if vq.perfidious
+            result.perfidious = game.players.filter((x)->x.isPerfidiousVisible()).map (x)->
                 x.publicinfo()
 
 #job情報を
