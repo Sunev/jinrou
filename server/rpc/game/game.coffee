@@ -4899,6 +4899,8 @@ class SuperFox extends Fox
         @setTarget playerid
         @setFlag {
             target: playerid
+            # 威嚇が有効な日（この日の夜だけ有効）
+            day: game.day
         }
         log=
             mode:"skill"
@@ -4907,7 +4909,8 @@ class SuperFox extends Fox
         splashlog game.id,game,log
         null
     sunset:(game)->
-        target = @flag?.target ? @target
+        # 威嚇は発動した日の夜だけ有効（毎晩繰り返さない）
+        target = if @flag?.day == game.day then @flag.target else null
         t=game.getPlayer target
         unless t?
             return super
