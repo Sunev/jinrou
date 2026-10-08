@@ -6,13 +6,13 @@
  * 本脚本在 Node 里复现这套协议，用于抓取房间/对局数据、复现和调试 RPC 行为。
  *
  * 用法:
- *   node tool/rpc.js <RPC方法> [位置参数...] [选项]
+ *   node debug-script/rpc.js <RPC方法> [位置参数...] [选项]
  *
  * 例:
- *   node tool/rpc.js game.rooms.oneRoom 397032
- *   node tool/rpc.js game.game.getlog 397032 --out=log.json --pretty
- *   node tool/rpc.js game.rooms.getRooms waiting 1
- *   node tool/rpc.js game.game.getlog --params='[397032]' --raw
+ *   node debug-script/rpc.js game.rooms.oneRoom 397032
+ *   node debug-script/rpc.js game.game.getlog 397032 --out=log.json --pretty
+ *   node debug-script/rpc.js game.rooms.getRooms waiting 1
+ *   node debug-script/rpc.js game.game.getlog --params='[397032]' --raw
  *
  * 选项:
  *   --params=<json>       RPC 参数（JSON 数组或单值；优先于位置参数）
@@ -110,13 +110,13 @@ function targetLabel(target) {
   return target.scheme + '://' + target.host + (target.port ? ':' + target.port : '');
 }
 
-const USAGE = `用法: node tool/rpc.js <RPC方法> [位置参数...] [选项]
+const USAGE = `用法: node debug-script/rpc.js <RPC方法> [位置参数...] [选项]
 
 例:
-  node tool/rpc.js game.rooms.oneRoom 397032
-  node tool/rpc.js game.game.getlog 397032 --out=log.json --pretty
-  node tool/rpc.js game.rooms.getRooms waiting 1
-  node tool/rpc.js game.game.getlog --params='[397032]' --raw
+  node debug-script/rpc.js game.rooms.oneRoom 397032
+  node debug-script/rpc.js game.game.getlog 397032 --out=log.json --pretty
+  node debug-script/rpc.js game.rooms.getRooms waiting 1
+  node debug-script/rpc.js game.game.getlog --params='[397032]' --raw
 
 选项:
   --params=<json>       RPC 参数（JSON 数组或单值；优先于位置参数）

@@ -16,9 +16,9 @@
  *      … 希望役職制のタイマー(60秒) → day=1/night になり、nextturn ログが残る
  *
  * 使い方:
- *   node tool/e2e-room-invariants.js                    # サーバーを自分で起動/停止
- *   node tool/e2e-room-invariants.js --no-start-server   # 既に起動中のサーバーに対して
- *   node tool/e2e-room-invariants.js --keep             # 検証データを消さずに残す
+ *   node debug-script/e2e-room-invariants.js                    # サーバーを自分で起動/停止
+ *   node debug-script/e2e-room-invariants.js --no-start-server   # 既に起動中のサーバーに対して
+ *   node debug-script/e2e-room-invariants.js --keep             # 検証データを消さずに残す
  *
  * オプション:
  *   --host=<host>       接続先（既定: config/app.coffee の application.url）
@@ -51,7 +51,7 @@ const E2E_PASS = 'e2epass123';
 const WAIT_ROLEREQUEST_MS = 70000;
 const RPC_RESPONDER_ID = '1';
 
-// --- 設定（tool/rpc.js と同じ流儀で config/app.coffee を読む）-----------------
+// --- 設定（debug-script/rpc.js と同じ流儀で config/app.coffee を読む）-----------------
 function loadConfig() {
   try {
     require('coffee-script/register');
@@ -83,7 +83,7 @@ const CONFIG = loadConfig() || {
   application: { url: 'http://127.0.0.1/' },
 };
 
-const USAGE = `使い方: node tool/e2e-room-invariants.js [オプション]
+const USAGE = `使い方: node debug-script/e2e-room-invariants.js [オプション]
 
 オプション:
   --host=<host>       接続先（既定: config/app.coffee）
@@ -148,7 +148,7 @@ function parseArgs(argv) {
 
 // --- engine.io(socketstream) の最小クライアント ---------------------------------
 // 1本のセッションで複数の RPC を呼ぶ（ログイン状態を保つ必要があるため）。
-// プロトコルは tool/rpc.js と同じ。payload の長さは「文字数」で宣言する
+// プロトコルは debug-script/rpc.js と同じ。payload の長さは「文字数」で宣言する
 // （engine.io-parser は message.length で検証するので、バイト数だと非ASCIIで壊れる）。
 function frame(packet) {
   return packet.length + ':' + packet;
@@ -445,7 +445,7 @@ function buildClone(roomid) {
     password: false,
     blind: '',
     theme: '',
-    comment: 'tool/e2e-room-invariants.js が作った使い捨ての部屋',
+    comment: 'debug-script/e2e-room-invariants.js が作った使い捨ての部屋',
   };
   const game = {
     id: roomid,
