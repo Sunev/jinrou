@@ -112,6 +112,9 @@ jobinfo:
     targets: '你的目标是 {{names}}'
     enemies: '你的宿敌是 {{names}}'
     spaceWerewolfImposters: '同伴的诈欺师是 {{names}}'
+    # Both Perfidious and Heretic are listed here, and the label is
+    # unified to "Perfidious" even when the viewer is a Heretic.
+    # This is by design.
     perfidious: '同伴的背信者是 {{names}}'
 
 # game-view: speak form.
