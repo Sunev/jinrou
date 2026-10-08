@@ -8,6 +8,7 @@ Are you a werewolf?
 == requirements ==
 * Redis
 * MongoDB >= 6.0
+* Nodejs <= 14
 
 == usage ==
 # Copy the source code
