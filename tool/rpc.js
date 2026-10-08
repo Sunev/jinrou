@@ -265,8 +265,11 @@ function request(opts, method, path, options) {
 }
 
 // engine.io（协议 v2）的 payload 是「<长度>:<包」的重复拼接
+// 注意: 长度是 UTF-16 码元数（JS 字符串长度），不是 UTF-8 字节数。
+// engine.io-parser 的 decodePayload 会用 message.length 校验，
+// 字节数会导致「长度不符 → 整个 payload 被丢弃 → 会话失效」。
 function frame(packet) {
-  return Buffer.byteLength(packet, 'utf8') + ':' + packet;
+  return packet.length + ':' + packet;
 }
 
 function decodePackets(payload) {
