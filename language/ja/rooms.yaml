@@ -6,6 +6,8 @@ error:
   gmCannotBeHelper: "GM不能成为帮手"
   # a player cannot be a helper of oneself.
   noSelfHelper: "不能成为自己的帮手"
+  # a helper must target a player who actually plays the game.
+  helperTargetNotPlayer: "只能成为玩家的帮手"
   # This room has already started.
   alreadyStarted: "游戏已经开始"
   # You have not join this room.
