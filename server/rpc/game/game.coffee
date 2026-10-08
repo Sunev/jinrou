@@ -13295,20 +13295,6 @@ class Complex
     getMainJobDisp:(chemicalLeft)->@main.getMainJobDisp(chemicalLeft)
     midnightSort: 100
 
-# 灵能者念杀护卫的复合类 - 只能护卫念杀攻击
-class GuardedByPsychic extends Complex
-    cmplType: "GuardedByPsychic"
-    checkDeathResistance:(game, found, from)->
-        guard = game.getPlayer @cmplFlag
-        unless found == "nekikill"
-            return super
-        guard.addGamelog game, "curseGuard", null, @id
-        true
-    sunrise:(game)->
-        @mcall game, @main.sunrise, game
-        @sub?.sunrise? game
-        @uncomplex game
-
     #@mainのやつを呼ぶ
     mcall:(game,method,args...)->
         if @main.isComplex()
@@ -14854,6 +14840,20 @@ class HouseKeeped extends Complex
     sunrise:(game)->
         # 1日で解除
         @mcall game,@main.sunrise,game
+        @sub?.sunrise? game
+        @uncomplex game
+
+# 灵能者念杀护卫的复合类 - 只能护卫念杀攻击
+class GuardedByPsychic extends Complex
+    cmplType: "GuardedByPsychic"
+    checkDeathResistance:(game, found, from)->
+        guard = game.getPlayer @cmplFlag
+        unless found == "nekikill"
+            return super
+        guard.addGamelog game, "curseGuard", null, @id
+        true
+    sunrise:(game)->
+        @mcall game, @main.sunrise, game
         @sub?.sunrise? game
         @uncomplex game
 
