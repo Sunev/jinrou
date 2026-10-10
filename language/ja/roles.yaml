@@ -193,6 +193,7 @@ jobname:
   Dreamer: '蝴蝶'
   VariationFox: '歪狐'
   Assassin: '暗杀者'
+  LandmineGirl: '地雷少女'
   Shadow: '影法师'
   AttractiveWoman: '美女'
   DestroyCraziest: '破坏的狂人'
@@ -1128,6 +1129,11 @@ VariationFox:
 
 Assassin:
   select: '{{name}} 暗杀了 {{target}}。'
+
+LandmineGirl:
+  knownWolf: '{{name}} 得知 {{target}} 是人狼。'
+  select: '{{name}} 袭击了 {{target}}。'
+  counterKilled: '{{name}} 袭击 {{target}} 时被反杀了。'
 
 Shadow:
   select: '{{name}} 剥去了 {{target}} 的影子。'
