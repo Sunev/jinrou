@@ -283,6 +283,7 @@ foundDetail:
   oni: '被鬼捉走'
   selfdestruct: '自爆'
   assassinate: '暗杀'
+  landmineAssassinate: '✝升天✝'
   ghostrevenge: '亡灵的怨念'
   fallback: '未知原因'
   situation: '{{name}} 的死因是 {{detail}}。'
