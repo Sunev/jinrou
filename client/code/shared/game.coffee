@@ -79,6 +79,7 @@ exports.jobs=["Human","Werewolf","Diviner","Psychic","Madman","Guard","Couple","
 # 人狼ジャッジメント
 "BlackCat","Amanojaku","HouseKeeper","Itako","Teruteru",
 "WerewolfDescendant","Perfidious","Heretic","MagicalGirl","Elder","ButaOtoko","Princess",
+"NineTailedFox","LastStandWolf","SuperWerewolf",
 # 人狼はウソ月
 "BloodWolf","AttractiveWoman",
 # 人狼 SUPER DX（幻冬舎）
@@ -97,15 +98,19 @@ exports.jobs=["Human","Werewolf","Diviner","Psychic","Madman","Guard","Couple","
 "DarkWolf",
 # 人狼ゲームオンライン
 "RainyBoy",
+# 人狼倶楽部
+"HimeFox","MindPsychic",
+# 人狼オールスター／狼きゅーぶ！
+"Paladin",
 # オリジナル
 "SantaClaus","Reindeer",
 "Pyrotechnist","Patissiere","Shishimai","Idol","LurkingMad",
 "DecoyWolf","Hooligan","HomeComer","DragonKnight","Poet","Sacrifice",
 "Synesthete","Streamer","RemoteWorker","Disguised","Acrobat","Hanami",
 "ResidualHaunting",
-"NineTailedFox","HimeFox","MindPsychic","Paladin","OldGuard","LastStandWolf","FoxMatchmaker","LandmineGirl",
+"OldGuard","FoxMatchmaker","LandmineGirl",
 # 希望ヶ峰学園心理学科
-"SuperDiviner","SuperGuard","SuperWerewolf","SuperFox"
+"SuperDiviner","SuperGuard","SuperFox"
 ]
 # 隠されていて自分で入れることができない役職
 exports.hiddenJobs = [
