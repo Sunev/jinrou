@@ -198,6 +198,14 @@ copyObject=(obj)->
         result[key]=obj[key]
     result
 
+# 短IDを付与しないモード（投票結果などの表形式ログ）
+# クライアント側でこれらのログは短IDを表示・参照しないため、発行しても使われない
+# （front/src/pages/game-view/logs/log.tsx の表形式ブランチと対応させること）
+NO_SHORT_ID_MODES = ["voteresult", "probability_table", "poem"]
+
+# 短ID（>>N 引用用）を付与する対象かどうか
+shouldAssignShortId = (log)-> log? and log.mode not in NO_SHORT_ID_MODES
+
 # 使用済み短IDを復元する（サーバ再起動後に同じ短IDを生成しないため）
 restoreUsedShortIds = (game, shortIds)->
     ids = shortIds.filter (id)-> id?
@@ -206,6 +214,96 @@ restoreUsedShortIds = (game, shortIds)->
         maxDigits = Math.max (id.length for id in ids)...
         game.minDigits = maxDigits if maxDigits > game.minDigits
     return
+
+# 短IDを付与した発言を保存するためのbulkWriteオペレーション
+shortIdSetOp = (log)->
+    {
+        updateOne:
+            filter: { _id: log._id }
+            update: { $set: { shortId: log.shortId } }
+    }
+
+# 参照対象外のログに残っている短IDを取り除くためのbulkWriteオペレーション
+shortIdUnsetOp = (log)->
+    {
+        updateOne:
+            filter: { _id: log._id }
+            update: { $unset: { shortId: '' } }
+    }
+
+# 発言の配列から短IDの状態を復元し、新規発言と同じ規則で短IDを整える
+# - 短IDの無い発言（参照対象のみ）に新しく付与する
+# - 参照対象外のログに残っている短IDは取り除く
+# 戻り値：{assigned: 新しく付与した発言, removed: 短IDを取り除いた発言}
+syncShortIds = (game, logs)->
+    restoreUsedShortIds game, (log.shortId for log in logs when log?)
+    assigned = []
+    removed = []
+    for log in logs when log?
+        if shouldAssignShortId log
+            unless log.shortId?
+                log.shortId = game.generateShortId()
+                game.usedShortIds.add log.shortId
+                digitLength = log.shortId.length
+                game.digitsCount[digitLength] = (game.digitsCount[digitLength] ? 0) + 1
+                assigned.push log
+        else if log.shortId?
+            # 表形式ログなどの参照対象外に付いている短IDを削除する
+            delete log.shortId
+            removed.push log
+    { assigned, removed }
+
+# 発言短IDの後方互換処理
+# - shortIdEnabledが無い部屋（短ID導入前に作られた部屋）は、既存の発言すべてに短IDを付与してフラグを立てる
+# - フラグのある部屋でも、再起動後に短IDが重複しないよう使用済み短IDを復元する
+# 最初のログ配信・ログ取得より前に完了させる必要がある
+ensureShortIds = (game, callback)->
+    # フラグを立てる（メモリ上の状態も合わせて更新し、後続のsaveで戻らないようにする）
+    flagEnabled = (done)->
+        game.shortIdEnabled = true
+        M.games.updateOne { id: game.id }, { $set: { shortIdEnabled: true } }, done
+    if game.log_save_mode == "v2"
+        # v2: 発言はgamelogsコレクションにある
+        M.gamelogs.find({ gameid: game.id }, { shortId: 1 }).toArray (err, docs)->
+            if err?
+                callback err
+                return
+            synced = syncShortIds game, docs
+            # 付与（$set）と削除（$unset）をまとめて適用する
+            ops = (shortIdSetOp log for log in synced.assigned).concat (shortIdUnsetOp log for log in synced.removed)
+            if ops.length == 0
+                if game.shortIdEnabled then callback(null) else flagEnabled callback
+                return
+            # 短IDを保存してからフラグを立てる
+            game.shortIdEnabled = true
+            M.gamelogs.bulkWrite ops
+            .then -> flagEnabled callback
+            .catch (err)->
+                # 保存に失敗した場合はフラグを戻し、次回のロードで再試行させる
+                game.shortIdEnabled = false
+                callback err
+    else
+        # v1: 発言はgamesドキュメントのlogs配列にあるので、配列ごと書き戻す
+        M.games.findOne { id: game.id }, { logs: 1 }, (err, logdoc)->
+            if err?
+                callback err
+                return
+            logs = logdoc?.logs ? []
+            synced = syncShortIds game, logs
+            changed = synced.assigned.length + synced.removed.length
+            if changed == 0 and game.shortIdEnabled
+                callback null
+                return
+            game.shortIdEnabled = true
+            set = { shortIdEnabled: true }
+            set.logs = logs if changed > 0
+            M.games.updateOne { id: game.id }, { $set: set }, (err)->
+                if err?
+                    # 保存に失敗した場合はフラグを戻し、次回のロードで再試行させる
+                    game.shortIdEnabled = false
+                    callback err
+                    return
+                callback null
 
 # ゲームオブジェクトを読み込む
 loadGame = (roomid, ss, callback)->
@@ -223,21 +321,13 @@ loadGame = (roomid, ss, callback)->
                 callback null, games[roomid]
             else
                 game = Game.unserialize doc, ss
-                # 発言短ID（>>N 引用用）が重複しないよう、既存の発言から使用済み短IDを復元する
-                if game.log_save_mode == "v2"
-                    M.gamelogs.find({ gameid: game.id }, { shortId: 1, _id: 0 }).toArray (err, docs)->
-                        if err?
-                            console.error err
-                        else
-                            restoreUsedShortIds game, (d.shortId for d in docs)
-                        games[roomid] = game
-                        callback null, game
-                else
-                    # v1: games.logs から復元
-                    M.games.findOne { id: roomid }, { logs: { $slice: -10000 } }, (err, logdoc)->
-                        restoreUsedShortIds game, ((logdoc?.logs ? []).map (l)-> l.shortId)
-                        games[roomid] = game
-                        callback null, game
+                # 発言短ID（>>N 引用用）を整えてからゲームを使えるようにする
+                # （最初のログ配信・ログ取得より前に完了させる）
+                ensureShortIds game, (err)->
+                    if err?
+                        console.error err
+                    games[roomid] = game
+                    callback null, game
 #内部用
 module.exports=
     newGame: (room,ss, cb)->
@@ -551,7 +641,10 @@ class Game
         # 夜能力の対象選択に対するフック
         @skillTargetHook = new SkillTargetHook this
 
-        # 発言短ID（>>N 引用用）生成の状態
+        # 発言短ID（>>N 引用用）
+        # shortIdEnabled: すべての発言に短IDが付与済みかどうかを示す内部フラグ（ユーザーには見せない）
+        # 新規の部屋は作成時にtrue、短ID導入前に作られた部屋はfalseになり、ロード時に既存発言へ付与する
+        @shortIdEnabled = true
         @usedShortIds = new Set()
         @minDigits = 1  # 現在の最小桁数（1=1桁から開始）
         @digitsCount = {}  # 各桁の使用数 { 1: 5, 2: 20, ... }
@@ -643,6 +736,8 @@ class Game
             #quantum_patterns:@quantum_patterns
             finish_time:@finish_time
             log_save_mode: @log_save_mode
+            # 発言短IDの付与状況（ユーザーには見せない内部フラグ）
+            shortIdEnabled: @shortIdEnabled
         }
     #DB用をもとにコンストラクト
     @unserialize:(obj,ss)->
@@ -678,6 +773,9 @@ class Game
         game.werewolf_target=obj.werewolf_target ? []
         game.werewolf_target_remain=obj.werewolf_target_remain ? 0
         game.log_save_mode = obj.log_save_mode ? "v1"
+        # 発言短IDの付与状況。フラグの無い部屋（短ID導入前に作られた部屋）はfalseとして扱い、
+        # ロード時に既存の発言へ短IDを付与する。
+        game.shortIdEnabled = obj.shortIdEnabled ? false
         # 開始前(day==0)のゲームは、開始に必要な情報(配役・希望役職の一覧)を
         # DBに保存していないので、ロードし直しても再開できない。
         # 開始前に戻して、もう一度開始できるようにする。
@@ -17472,11 +17570,13 @@ module.exports.actions=(req,res,ss)->
 splashlog=(roomid,game,log)->
     log.time=Date.now() # 時間を付加
     # 発言短ID（>>N 引用用）を生成して付与
-    log.shortId = game.generateShortId()
-    game.usedShortIds.add log.shortId
-    # 桁数カウンターを更新
-    digitLength = log.shortId.length
-    game.digitsCount[digitLength] = (game.digitsCount[digitLength] ? 0) + 1
+    # 表形式ログ（voteresult / probability_table / poem）は引用の対象にならないので付与しない
+    if shouldAssignShortId log
+        log.shortId = game.generateShortId()
+        game.usedShortIds.add log.shortId
+        # 桁数カウンターを更新
+        digitLength = log.shortId.length
+        game.digitsCount[digitLength] = (game.digitsCount[digitLength] ? 0) + 1
 
     #DBに追加
     game.logsaver.saveLog log

@@ -168,11 +168,10 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
               </tbody>
             </LogTable>
           </Main>
+          {/* 表形式のログは引用（>>短ID）の対象外 */}
           <Time
             noName
             time={new Date(log.time)}
-            shortId={log.shortId}
-            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
@@ -235,11 +234,10 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
               </tbody>
             </LogTable>
           </Main>
+          {/* 表形式のログは引用（>>短ID）の対象外 */}
           <Time
             noName
             time={new Date(log.time)}
-            shortId={log.shortId}
-            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
@@ -262,11 +260,10 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
             </I18nInterp>
             <PoemWrapper>{log.comment}</PoemWrapper>
           </Comment>
+          {/* 表形式のログは引用（>>短ID）の対象外 */}
           <Time
             noName={noName}
             time={new Date(log.time)}
-            shortId={log.shortId}
-            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
