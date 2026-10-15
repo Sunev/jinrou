@@ -332,6 +332,19 @@ export class SpeakForm extends React.PureComponent<
     }
   }
   /**
+   * Append text to the comment input.
+   * Used to insert a reply reference (>>N) from logs.
+   */
+  public appendToComment(text: string) {
+    this.commentString += text;
+    // Re-render so that the new comment is reflected on inputs.
+    this.setState({});
+    if (this.comment != null) {
+      this.comment.value = this.commentString;
+      this.comment.focus();
+    }
+  }
+  /**
    * Handle submission of the speak form.
    */
   @bind

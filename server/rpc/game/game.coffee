@@ -198,6 +198,15 @@ copyObject=(obj)->
         result[key]=obj[key]
     result
 
+# 使用済み短IDを復元する（サーバ再起動後に同じ短IDを生成しないため）
+restoreUsedShortIds = (game, shortIds)->
+    ids = shortIds.filter (id)-> id?
+    game.usedShortIds = new Set(ids)
+    if ids.length > 0
+        maxDigits = Math.max (id.length for id in ids)...
+        game.minDigits = maxDigits if maxDigits > game.minDigits
+    return
+
 # ゲームオブジェクトを読み込む
 loadGame = (roomid, ss, callback)->
     if games[roomid]?
@@ -213,8 +222,22 @@ loadGame = (roomid, ss, callback)->
                 # prevents duplicate instantiation of Game
                 callback null, games[roomid]
             else
-                games[roomid] = Game.unserialize doc, ss
-                callback null, games[roomid]
+                game = Game.unserialize doc, ss
+                # 発言短ID（>>N 引用用）が重複しないよう、既存の発言から使用済み短IDを復元する
+                if game.log_save_mode == "v2"
+                    M.gamelogs.find({ gameid: game.id }, { shortId: 1, _id: 0 }).toArray (err, docs)->
+                        if err?
+                            console.error err
+                        else
+                            restoreUsedShortIds game, (d.shortId for d in docs)
+                        games[roomid] = game
+                        callback null, game
+                else
+                    # v1: games.logs から復元
+                    M.games.findOne { id: roomid }, { logs: { $slice: -10000 } }, (err, logdoc)->
+                        restoreUsedShortIds game, ((logdoc?.logs ? []).map (l)-> l.shortId)
+                        games[roomid] = game
+                        callback null, game
 #内部用
 module.exports=
     newGame: (room,ss, cb)->
@@ -528,6 +551,11 @@ class Game
         # 夜能力の対象選択に対するフック
         @skillTargetHook = new SkillTargetHook this
 
+        # 発言短ID（>>N 引用用）生成の状態
+        @usedShortIds = new Set()
+        @minDigits = 1  # 現在の最小桁数（1=1桁から開始）
+        @digitsCount = {}  # 各桁の使用数 { 1: 5, 2: 20, ... }
+
         @initTimeBasedEvent()
 
     initTimeBasedEvent:->
@@ -539,6 +567,25 @@ class Game
             # 時刻を0時にセット
             d.setHours 0, 0, 0, 0
             d
+
+    # 発言短IDを生成（ユニークな数字、衝突時は桁数を増やす。埋めなし）
+    generateShortId:->
+        generate = (digits) =>
+            max = Math.pow(10, digits)
+            # 利用率を計算（digitsCountからO(1)で取得）
+            usedCount = @digitsCount[digits] ? 0
+            # 利用率が80%を超えていたら次の桁へ
+            if usedCount / max > 0.8
+                @minDigits = digits + 1
+                return generate(digits + 1)
+            # 未使用のIDを探す（最大20回）
+            for attempt in [0...20]
+                id = Math.floor(Math.random() * max).toString()
+                return id unless @usedShortIds.has(id)
+            # 見つからなければ次の桁へ
+            return generate(digits + 1)
+        return generate(@minDigits)
+
     # 時刻イベントを処理
     # phase:
     #   "nextturn" if called on nextturn
@@ -17424,6 +17471,13 @@ module.exports.actions=(req,res,ss)->
 
 splashlog=(roomid,game,log)->
     log.time=Date.now() # 時間を付加
+    # 発言短ID（>>N 引用用）を生成して付与
+    log.shortId = game.generateShortId()
+    game.usedShortIds.add log.shortId
+    # 桁数カウンターを更新
+    digitLength = log.shortId.length
+    game.digitsCount[digitLength] = (game.digitsCount[digitLength] ? 0) + 1
+
     #DBに追加
     game.logsaver.saveLog log
     #みんなに送信

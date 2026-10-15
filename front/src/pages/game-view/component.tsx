@@ -250,6 +250,7 @@ export class Game extends React.Component<IPropGame, {}> {
                           rule={store.rule}
                           logPickup={logPickup}
                           onResetLogPickup={this.handleResetLogPickup}
+                          onShortIdClick={this.handleShortIdClick}
                         />
                       </LogsWrapper>
                     </>
@@ -376,6 +377,16 @@ export class Game extends React.Component<IPropGame, {}> {
   @bind
   protected handleResetLogPickup(): void {
     this.props.store.update({ logPickup: null });
+  }
+  /**
+   * Handle a click on a log's shortId.
+   * Inserts a reply reference (>>N) into the speak form.
+   */
+  @bind
+  protected handleShortIdClick(shortId: string): void {
+    if (this.speakFormRef.current != null) {
+      this.speakFormRef.current.appendToComment(`>>${shortId} `);
+    }
   }
   /**
    * Handle a focus change of speak input.

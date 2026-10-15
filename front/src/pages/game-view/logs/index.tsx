@@ -40,6 +40,10 @@ export interface IPropLogs {
    * Callback for resetting log pickup filter.
    */
   onResetLogPickup(): void;
+  /**
+   * Callback for inserting a reply reference (>>N) into the speak form.
+   */
+  onShortIdClick?: (shortId: string) => void;
 }
 
 export interface IStateLogs {
@@ -55,6 +59,14 @@ export class Logs extends React.Component<IPropLogs, IStateLogs> {
    * Classname attached to each log.
    */
   private readonly logClass = 'jf-log';
+  /**
+   * Resolve log by shortId for reply reference.
+   * This is a performance-optimized lookup using the shortId index.
+   * Returns the StoredLog object directly to avoid JSON serialization overhead.
+   */
+  private resolveLogById = (shortId: string): StoredLog | null => {
+    return this.props.logs.findByShortId(shortId);
+  };
   constructor(props: IPropLogs) {
     super(props);
     this.state = {
@@ -79,6 +91,7 @@ export class Logs extends React.Component<IPropLogs, IStateLogs> {
       visibility,
       logPickup,
       onResetLogPickup,
+      onShortIdClick,
     } = this.props;
     const { renderingState } = this.state;
 
@@ -125,6 +138,8 @@ export class Logs extends React.Component<IPropLogs, IStateLogs> {
               fixedSize={fixedSize}
               icons={icons}
               rule={rule}
+              resolveLogById={this.resolveLogById}
+              onShortIdClick={onShortIdClick}
             />
           );
         })}
@@ -169,6 +184,14 @@ class LogChunk extends React.Component<
      * Current rule.
      */
     rule: Rule | undefined;
+    /**
+     * Function to resolve log by shortId for reply reference.
+     */
+    resolveLogById?: (shortId: string) => StoredLog | null;
+    /**
+     * Callback for inserting a reply reference (>>N) into the speak form.
+     */
+    onShortIdClick?: (shortId: string) => void;
   },
   {}
 > {
@@ -181,6 +204,8 @@ class LogChunk extends React.Component<
       renderedNumber,
       rule,
       icons,
+      resolveLogById,
+      onShortIdClick,
     } = this.props;
     if (!visible && !fixedSize) {
       return null;
@@ -207,6 +232,8 @@ class LogChunk extends React.Component<
                     log={log}
                     rule={rule}
                     icons={icons}
+                    resolveLogById={resolveLogById}
+                    onShortIdClick={onShortIdClick}
                   />
                 );
               })

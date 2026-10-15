@@ -7,6 +7,70 @@ import { phone, notPhone } from '../../../common/media';
 import { Theme } from '../../../theme';
 import { FixedSizeLogRow } from './elements';
 import { CommentContent } from './comment';
+import { StoredLog } from './log-store';
+
+const SHORT_ID_DOUBLE_CLICK_DELAY = 300;
+let currentShortIdClick: ((shortId: string) => void) | undefined;
+let lastShortIdClickTime = 0;
+let lastShortIdClick = '';
+let shortIdClickResetTimer: number | null = null;
+
+/**
+ * Insert a reply reference (>>N) of the given shortId into the speak form.
+ */
+function insertShortIdReference(shortId: string | null): void {
+  if (shortId != null && currentShortIdClick != null) {
+    currentShortIdClick(shortId);
+  }
+}
+
+/**
+ * Handle a click on shortId for double-click detection.
+ * Returns true if double-click is detected and a reply reference is inserted.
+ */
+function handleShortIdDoubleClick(e: React.MouseEvent<HTMLElement>): boolean {
+  const shortId = e.currentTarget.getAttribute('data-shortid');
+  if (!shortId || !currentShortIdClick) {
+    return false;
+  }
+
+  const now = Date.now();
+  const timeDiff = now - lastShortIdClickTime;
+  if (
+    lastShortIdClick === shortId &&
+    timeDiff < SHORT_ID_DOUBLE_CLICK_DELAY &&
+    timeDiff > 0
+  ) {
+    currentShortIdClick(shortId);
+    lastShortIdClickTime = 0;
+    lastShortIdClick = '';
+    if (shortIdClickResetTimer != null) {
+      window.clearTimeout(shortIdClickResetTimer);
+      shortIdClickResetTimer = null;
+    }
+    return true;
+  }
+
+  lastShortIdClickTime = now;
+  lastShortIdClick = shortId;
+  if (shortIdClickResetTimer != null) {
+    window.clearTimeout(shortIdClickResetTimer);
+  }
+  shortIdClickResetTimer = window.setTimeout(() => {
+    lastShortIdClickTime = 0;
+    lastShortIdClick = '';
+    shortIdClickResetTimer = null;
+  }, SHORT_ID_DOUBLE_CLICK_DELAY);
+  return false;
+}
+
+/**
+ * Handle a click on the name part to insert the reply reference (>>N) of the log.
+ */
+function handleShortIdNameClick(e: React.MouseEvent<HTMLElement>): void {
+  e.stopPropagation();
+  insertShortIdReference(e.currentTarget.getAttribute('data-shortid'));
+}
 
 export interface IPropOneLog {
   /**
@@ -35,6 +99,14 @@ export interface IPropOneLog {
    * Current rule setting.
    */
   rule: Rule | undefined;
+  /**
+   * Function to resolve log by shortId for reply reference.
+   */
+  resolveLogById?: (shortId: string) => StoredLog | null;
+  /**
+   * Callback for inserting a reply reference (>>N) into the speak form.
+   */
+  onShortIdClick?: (shortId: string) => void;
 }
 
 /**
@@ -50,7 +122,20 @@ function sanitizeLog(log: string): string {
  */
 class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
   public render() {
-    const { t, theme, logClass, fixedSize, log, rule, icons } = this.props;
+    const {
+      t,
+      theme,
+      logClass,
+      fixedSize,
+      log,
+      rule,
+      icons,
+      resolveLogById,
+      onShortIdClick,
+    } = this.props;
+    currentShortIdClick = onShortIdClick;
+    const shortId = log.shortId;
+    const shortIdClickable = shortId != null && onShortIdClick != null;
 
     const LogLineWrapper = fixedSize ? FixedSizeLogRow : React.Fragment;
 
@@ -86,6 +171,8 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
           <Time
             noName
             time={new Date(log.time)}
+            shortId={log.shortId}
+            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
@@ -151,6 +238,8 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
           <Time
             noName
             time={new Date(log.time)}
+            shortId={log.shortId}
+            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
@@ -176,6 +265,8 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
           <Time
             noName={noName}
             time={new Date(log.time)}
+            shortId={log.shortId}
+            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
@@ -213,6 +304,7 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
           <CommentContent
             comment={log.comment || ''}
             supplement={log.mode === 'nextturn' ? undefined : log.supplement}
+            resolveLogById={resolveLogById}
           />
         </Comment>
       ) : (
@@ -224,13 +316,21 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
           <Icon noName={noName} {...props}>
             {icon != null ? <img src={icon} alt="" /> : null}
           </Icon>
-          <Name noName={noName} {...props}>
+          <Name
+            noName={noName}
+            {...props}
+            data-shortid={shortId}
+            onClick={shortIdClickable ? handleShortIdNameClick : undefined}
+            style={shortIdClickable ? { cursor: 'pointer' } : undefined}
+          >
             {nameText ? sanitizeLog(nameText) : null}
           </Name>
           {comment}
           <Time
             noName={noName}
             time={new Date(log.time)}
+            shortId={shortId}
+            onShortIdClick={onShortIdClick}
             logStyle={logStyle}
             className={logClass}
           />
@@ -612,8 +712,22 @@ interface IPropTime extends IPropLogPart {
   time: Date;
   className?: string;
   logStyle: LogStyle;
+  /**
+   * Short ID of this log, used for reply reference (>>N).
+   */
+  shortId?: string;
+  /**
+   * Callback for inserting a reply reference (>>N) into the speak form.
+   */
+  onShortIdClick?: (shortId: string) => void;
 }
-const TimeInner = ({ time, noName, className, logStyle }: IPropTime) => {
+const TimeInner = ({
+  time,
+  className,
+  logStyle,
+  shortId,
+  onShortIdClick,
+}: IPropTime) => {
   const year = time.getFullYear();
   const month = ('0' + (time.getMonth() + 1)).slice(-2);
   const day = ('0' + time.getDate()).slice(-2);
@@ -621,9 +735,26 @@ const TimeInner = ({ time, noName, className, logStyle }: IPropTime) => {
   const minute = ('0' + time.getMinutes()).slice(-2);
   const second = ('0' + time.getSeconds()).slice(-2);
   const str = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  const shortIdClickable = shortId != null && onShortIdClick != null;
   return (
     <LogPart logStyle={logStyle} className={className}>
-      <time>{str}</time>
+      <time
+        data-shortid={shortId}
+        title={shortIdClickable ? '双击引用该发言' : undefined}
+        style={{
+          cursor: shortIdClickable ? 'pointer' : 'default',
+          display: 'block',
+          width: '100%',
+        }}
+        onClick={shortIdClickable ? handleShortIdDoubleClick : undefined}
+      >
+        {shortId != null ? (
+          <>
+            <span style={{ opacity: 0.6 }}>{`>${shortId}`}</span>{' '}
+          </>
+        ) : null}
+        {str}
+      </time>
     </LogPart>
   );
 };

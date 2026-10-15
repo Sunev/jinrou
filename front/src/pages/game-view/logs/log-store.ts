@@ -49,6 +49,12 @@ export class LogStore {
   private lastLogId = 0;
 
   /**
+   * Map of shortId to log for quick lookup.
+   * This avoids O(n) lookup performance issues.
+   */
+  private shortIdIndex = new Map<string, StoredLog>();
+
+  /**
    * Number of all logs.
    */
   @computed
@@ -80,6 +86,10 @@ export class LogStore {
       day: this.currentDay,
     };
     chunk.logs.push(stored);
+    // Add to shortId index for quick lookup
+    if (stored.shortId) {
+      this.shortIdIndex.set(stored.shortId, stored);
+    }
   }
   /**
    * Reset logs.
@@ -92,6 +102,7 @@ export class LogStore {
         logs: [],
       },
     ];
+    this.shortIdIndex.clear();
   }
   /**
    * Reset logs with initial data.
@@ -129,5 +140,14 @@ export class LogStore {
     }
     // today
     yield* this.chunks[this.chunks.length - 1].logs;
+  }
+
+  /**
+   * Find a log by shortId.
+   * Returns null if not found.
+   */
+  public findByShortId(shortId: string): StoredLog | null {
+    const result = this.shortIdIndex.get(shortId);
+    return result !== undefined ? result : null;
   }
 }
