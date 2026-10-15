@@ -3130,6 +3130,8 @@ logs:[{
     comment: String
     userid:Userid
     name?:String
+    shortId?:String (短ID. 引用 >>N 用. 保存された発言にだけ付き, 配信時に
+                    合成されるログ(悪霊憑依の転送など)は元の短IDを引き継ぐ)
     to:Userid / null (あると、その人だけ）
     (nextturnの場合)
       day:Number
@@ -17611,6 +17613,8 @@ makelogsFor=(game,player,log)->
                 time: log.time
                 size: log.size
                 supplement: log.supplement
+            # 原本(heaven)も同時に見えるので, 短IDは原本側だけに持たせる.
+            # 同じ短IDが2行に現れると, 引用(>>N)の解決先が曖昧になるため.
             return [log, otherslog]
         if log.mode=="voteresult" && game.rule.voteresult != "hide"
             aliveDarkwolves = game.players.filter (x)->!x.dead && x.isJobType("DarkWolf")
@@ -17650,6 +17654,9 @@ makelogsFor=(game,player,log)->
             time:log.time
             size:log.size
             supplement: log.supplement
+            # 原本(heaven)はこのプレイヤーには見えないので, この転送後のログが
+            # 唯一の実体になる. 原本の短IDをそのまま引き継いで >>N で引用できるようにする.
+            shortId: log.shortId
         return [otherslog]
 
     return []
