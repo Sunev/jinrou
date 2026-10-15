@@ -17604,18 +17604,23 @@ splashlog=(roomid,game,log)->
 makelogsFor=(game,player,log)->
     if islogOK game, player, log
         if log.mode=="heaven" && log.possess_name?
-            # 両方見える感じで
-            otherslog=
-                mode:"half-day"
-                comment: log.comment
-                userid: log.possess_id
-                name: log.possess_name
-                time: log.time
-                size: log.size
-                supplement: log.supplement
-            # 原本(heaven)も同時に見えるので, 短IDは原本側だけに持たせる.
-            # 同じ短IDが2行に現れると, 引用(>>N)の解決先が曖昧になるため.
-            return [log, otherslog]
+            # 悪霊憑依の転送: 普段は原本(霊界発言)と転送後(昼の発言)の両方を見せる.
+            # ただしゲーム終了後は原本も全員に公開されるので, 複製を足すと同じ発言が
+            # ログに2行並んでしまう(終了後のログが約2倍になる一因).
+            # そのため終了後は原本だけを返す.
+            unless game.finished
+                # 両方見える感じで
+                otherslog=
+                    mode:"half-day"
+                    comment: log.comment
+                    userid: log.possess_id
+                    name: log.possess_name
+                    time: log.time
+                    size: log.size
+                    supplement: log.supplement
+                # 原本(heaven)も同時に見えるので, 短IDは原本側だけに持たせる.
+                # 同じ短IDが2行に現れると, 引用(>>N)の解決先が曖昧になるため.
+                return [log, otherslog]
         if log.mode=="voteresult" && game.rule.voteresult != "hide"
             aliveDarkwolves = game.players.filter (x)->!x.dead && x.isJobType("DarkWolf")
             if aliveDarkwolves.length > 0

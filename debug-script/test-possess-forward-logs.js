@@ -12,6 +12,8 @@
  *      >>N で引用できるようにする。
  *   2. 原本も見えるプレイヤー(霊界視点の死者)には mode:"half-day" の複製も渡すが,
  *      短IDは原本側だけに持たせる(同じ短IDが2行に現れると引用の解決先が曖昧になる)。
+ *   3. ゲーム終了後は原本が全員に公開されるので複製を渡さない
+ *      (同じ発言がログに2行並ぶ「終了後の倍増」を避ける)。
  *
  * 使い方:
  *   node debug-script/test-possess-forward-logs.js
@@ -294,6 +296,28 @@ function main() {
   check('霊界視点の死者: 複製側には短IDを付けない (同じ短IDが2行に出ない)', function () {
     const logs = game.makelogs([heavenLog('789')], dead);
     assert.strictEqual(logs[1].shortId, undefined);
+  });
+
+  console.log('3. ゲーム終了後: 原本が全員に公開されるので転送ログの複製は渡さない');
+  check('終了後(観戦者): 原本1件のみ (同じ発言が2行にならない)', function () {
+    game.finished = true;
+    const logs = game.makelogs([heavenLog('321')], observer);
+    assert.strictEqual(logs.length, 1);
+    assert.strictEqual(logs[0].mode, 'heaven');
+  });
+  check('終了後(生存者): 原本1件のみ', function () {
+    const logs = game.makelogs([heavenLog('321')], alive);
+    assert.strictEqual(logs.length, 1);
+    assert.strictEqual(logs[0].mode, 'heaven');
+  });
+  check('終了後(霊界視点の死者): 原本1件のみ', function () {
+    const logs = game.makelogs([heavenLog('321')], dead);
+    assert.strictEqual(logs.length, 1);
+    assert.strictEqual(logs[0].mode, 'heaven');
+  });
+  check('終了後も原本は短IDを持つ (引用 >>321 が使える)', function () {
+    const logs = game.makelogs([heavenLog('321')], observer);
+    assert.strictEqual(logs[0].shortId, '321');
   });
 
   console.log('');
