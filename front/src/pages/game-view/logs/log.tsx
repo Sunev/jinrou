@@ -16,15 +16,6 @@ let lastShortIdClick = '';
 let shortIdClickResetTimer: number | null = null;
 
 /**
- * Insert a reply reference (>>N) of the given shortId into the speak form.
- */
-function insertShortIdReference(shortId: string | null): void {
-  if (shortId != null && currentShortIdClick != null) {
-    currentShortIdClick(shortId);
-  }
-}
-
-/**
  * Handle a click on shortId for double-click detection.
  * Returns true if double-click is detected and a reply reference is inserted.
  */
@@ -65,11 +56,14 @@ function handleShortIdDoubleClick(e: React.MouseEvent<HTMLElement>): boolean {
 }
 
 /**
- * Handle a click on the name part to insert the reply reference (>>N) of the log.
+ * Handle a click on the name part.
+ * Uses the same double-click detection as the time part: only a double-click
+ * inserts the reply reference (>>N) of the log, so a single click no longer
+ * triggers a reference by accident.
  */
 function handleShortIdNameClick(e: React.MouseEvent<HTMLElement>): void {
   e.stopPropagation();
-  insertShortIdReference(e.currentTarget.getAttribute('data-shortid'));
+  handleShortIdDoubleClick(e);
 }
 
 export interface IPropOneLog {
@@ -317,6 +311,7 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
             noName={noName}
             {...props}
             data-shortid={shortId}
+            title={shortIdClickable ? '双击引用该发言' : undefined}
             onClick={shortIdClickable ? handleShortIdNameClick : undefined}
             style={shortIdClickable ? { cursor: 'pointer' } : undefined}
           >
