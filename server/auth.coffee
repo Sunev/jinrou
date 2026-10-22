@@ -37,10 +37,13 @@ exports.authenticate = (params,cb) ->
 
 # パスワードが一致するか確かめる
 exports.check = check = (raw, hash, salt)->
-    if salt?
-        return crpassword(raw, salt) == hash
-    else
-        return crpassword_old(raw) == hash
+    return false unless typeof raw == 'string' && typeof hash == 'string'
+    expected = if salt? then crpassword(raw, salt) else crpassword_old(raw)
+    a = Buffer.from expected
+    b = Buffer.from hash
+    # 長さが違う場合もタイミング差を抑えるため、ダミー比較して false
+    return false unless a.length == b.length && a.length > 0
+    return crypto.timingSafeEqual a, b
 
 # saltを生成
 exports.gensalt = gensalt = ()->
