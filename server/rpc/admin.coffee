@@ -1,10 +1,19 @@
 # Server-side Code
 child_process=require('child_process')
+crypto=require('crypto')
 
 libblacklist = require '../libs/blacklist.coffee'
 libi18n      = require '../libs/i18n.coffee'
 
 i18n = libi18n.getWithDefaultNS 'admin'
+
+# パスワード比較（タイミング攻撃緩和）
+timingSafeEqual=(a,b)->
+    return false unless typeof a=="string" and typeof b=="string"
+    ab=Buffer.from a
+    bb=Buffer.from b
+    return false unless ab.length==bb.length and ab.length>0
+    crypto.timingSafeEqual ab,bb
 
 # twitter系
 oauth=require './../oauth.coffee'
@@ -12,13 +21,16 @@ exports.actions =(req,res,ss)->
     req.use 'session'
     # 現在のセッションを管理者として承認する
     register:(query)->
+        unless query? && typeof query.password=="string"
+            res {error: i18n.t "common:error.invalidInput"}
+            return
         flag=false
         req.session.administer=false
         req.session.maintenance=false
-        if query.password==Config.admin.password
+        if timingSafeEqual query.password, Config.admin.password
             req.session.administer=true
             flag=true
-        if query.password==Config.maintenance.password
+        if timingSafeEqual query.password, Config.maintenance.password
             req.session.maintenance=true
             flag=true
 

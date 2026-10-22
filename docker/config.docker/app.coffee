@@ -34,13 +34,13 @@ module.exports =
     host: "redis"
 
   admin:
-    # 管理者権限を行使する際のパスワード
-    password: "test"
+    # 管理者権限を行使する際のパスワード（必ず設定。null の間は管理者機能は無効）
+    password: null
     # trueにしてはいけない
     securityHole: false
   maintenance:
-    # 人狼の更新などを行う際のパスワード
-    password: "test"
+    # 人狼の更新などを行う際のパスワード（必ず設定。null の間はメンテナンス機能は無効）
+    password: null
     # 人狼の更新スクリプト
     script:[
       "git pull"
