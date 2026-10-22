@@ -222,6 +222,9 @@ exports.actions =(req,res,ss)->
 
 # ユーザーデータが欲しい
     userData: (userid,password)->
+        unless typeof userid == "string"
+            res null
+            return
         getUserOpenData userid, (err, record)->
             if err?
                 res null
@@ -346,6 +349,9 @@ exports.actions =(req,res,ss)->
 
 # プロフィール変更 返り値=変更後 {"error":"message"}
     changeProfile: (query)->
+        unless query? && typeof query.password == "string"
+            res {error: i18n.t "common:error.invalidInput"}
+            return
         M.users.findOne {"userid":req.session.userId},(err,record)=>
             if err?
                 res {error: String err}
@@ -357,6 +363,9 @@ exports.actions =(req,res,ss)->
                 res {error: i18n.t "error.authFail"}
                 return
             if query.name?
+                unless typeof query.name == "string"
+                    res {error: i18n.t "common:error.invalidInput"}
+                    return
                 if query.name==""
                     res {error: i18n.t "error.changeProfile.nameEmpty"}
                     return
@@ -366,12 +375,18 @@ exports.actions =(req,res,ss)->
 
                 record.name=query.name
             if query.comment?
+                unless typeof query.comment == "string"
+                    res {error: i18n.t "common:error.invalidInput"}
+                    return
                 if query.comment.length > Config.maxlength.user.comment
                     res {error: i18n.t "error.changeProfile.commentTooLong"}
                     return
 
                 record.comment=query.comment
             if query.icon?
+                unless typeof query.icon == "string"
+                    res {error: i18n.t "common:error.invalidInput"}
+                    return
                 if query.icon.length > Config.maxlength.user.icon
                     res {error: i18n.t "error.changeProfile.iconTooLong"}
                     return
@@ -379,7 +394,7 @@ exports.actions =(req,res,ss)->
                 record.icon=query.icon
             M.users.updateOne {"userid":req.session.userId}, {$set: record}, {safe:true},(err,count)=>
                 if err?
-                    res {error: String errr}
+                    res {error: String err}
                     return
                 delete record.password
                 req.session.user=record
