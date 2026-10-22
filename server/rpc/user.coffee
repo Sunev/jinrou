@@ -43,20 +43,31 @@ login= (query,req,cb,ss)->
                     req.session.ban = null
                 else
                     req.session.ban = ban
-                req.session.save (err)->
-                    # お知らせ情報をとってきてあげる
-                    M.news.find().sort({time:-1}).next().then (doc)->
-                        cb {
-                            login:true
-                            lastNews:doc?.time
-                            banid: ban?.id
-                            forgive: forgive
-                        }
-                    # IPアドレスを記録してあげる
-                    M.users.update {"userid":response.userid},{$set:{ip:response.ip}}
-
-                # log
-                Server.log.login req.session.user
+                finishLogin = (token)->
+                    req.session.save (err)->
+                        # お知らせ情報をとってきてあげる
+                        M.news.find().sort({time:-1}).next().then (doc)->
+                            cb {
+                                login:true
+                                userid: response.userid
+                                lastNews:doc?.time
+                                banid: ban?.id
+                                forgive: forgive
+                                token: token
+                            }
+                        # IPアドレスを記録してあげる
+                        M.users.update {"userid":response.userid},{$set:{ip:response.ip}}
+                    # log
+                    Server.log.login req.session.user
+                if query.rememberMe
+                    Server.auth.issueToken response.userid, (err, token)->
+                        if err?
+                            console.error err
+                            finishLogin null
+                        else
+                            finishLogin token
+                else
+                    finishLogin null
         else
             # ログイン失敗してるじゃん
             libblacklist.handleHello req.clientIp, (ban)->
@@ -105,10 +116,60 @@ exports.actions =(req,res,ss)->
 # ログイン
 # cb: 失敗なら真
     login: (query)->
+        unless query? && typeof query.userid == "string" && typeof query.password == "string"
+            res {login:false, error: i18n.t "common:error.invalidInput"}
+            return
         login query,req,res,ss
 
+# トークンによる自動ログイン
+    loginWithToken:(query)->
+        unless query? && typeof query.token == "string"
+            res {login:false, error: i18n.t "common:error.invalidInput"}
+            return
+        Server.auth.verifyToken query.token,(err,userid)->
+            if err?
+                console.error err
+                res {login:false}
+                return
+            unless userid?
+                res {login:false}
+                return
+            M.users.findOne {"userid":userid},(err,response)->
+                if err? or !response?
+                    res {login:false}
+                    return
+                delete response.password
+                delete response.salt
+                req.session.setUserId response.userid
+                response.ip=req.clientIp
+                req.session.user=response
+                req.session.channel.reset()
+                libblacklist.handleLogin response.userid, response.ip, (ban)->
+                    if ban?.error?
+                        res {login:false, error: ban.error}
+                        return
+                    forgive = false
+                    if ban?.forgive
+                        forgive = true
+                        req.session.ban = null
+                    else
+                        req.session.ban = ban
+                    req.session.save (err)->
+                        M.news.find().sort({time:-1}).next().then (doc)->
+                            res {
+                                login:true
+                                userid: response.userid
+                                lastNews:doc?.time
+                                banid: ban?.id
+                                forgive: forgive
+                            }
+                        M.users.update {"userid":response.userid},{$set:{ip:response.ip}}
+                    Server.log.login req.session.user
+
 # ログアウト
-    logout: ->
+    logout:(query)->
+        # トークンが渡されたら失効させる
+        Server.auth.revokeToken query?.token if query?.token?
         #req.session.user.logout(cb)
         req.session.setUserId null
         # 管理者/メンテナンス権限も破棄する
@@ -121,6 +182,9 @@ exports.actions =(req,res,ss)->
 # 新規登録
 # cb: 错误メッセージ（成功なら偽）
     newentry: (query)->
+        unless query? && typeof query.userid == "string" && typeof query.password == "string"
+            res {login:false, error: i18n.t "common:error.invalidInput"}
+            return
         unless libblacklist.checkPermission "create_account", req.session.ban
             res {
                 login: false
@@ -337,6 +401,9 @@ exports.actions =(req,res,ss)->
                 return
             mailer.sendConfirmMail(query,req,res,ss)
     confirmMail:(query)->
+        unless query? && typeof query.token == "string" && query.timestamp?
+            res {error: i18n.t "common:error.invalidInput"}
+            return
         token = query.token
         timestamp = Number query.timestamp
         # console.log query
@@ -386,6 +453,10 @@ exports.actions =(req,res,ss)->
                 if err?
                     res {error: String err}
                     return
+                # パスワードリセット時は既存の自動ログイントークンを失効させる
+                if strfor == "reset"
+                    Server.auth.revokeAllTokens doc.userid, (err2)->
+                        console.error err2 if err2?
                 delete doc.password
                 req.session.user = doc
                 req.session.save ->
@@ -403,6 +474,9 @@ exports.actions =(req,res,ss)->
                         doc.info= i18n.t "confirmMail.settingChanged"
                     res doc
     resetPassword:(query)->
+        unless query? && typeof query.mail == "string" && typeof query.userid == "string" && typeof query.newpass == "string" && typeof query.newpass2 == "string"
+            res {error: i18n.t "common:error.invalidInput"}
+            return
         unless /\w[-\w.+]*@([A-Za-z0-9][-A-Za-z0-9]+\.)+[A-Za-z]{2,14}/.test query.mail
             res {info: i18n.t "error.invalidMailAddress"}
         query.userid = query.userid.trim()
@@ -421,6 +495,9 @@ exports.actions =(req,res,ss)->
                 mailer.sendResetMail(query,req,res,ss)
                 return
     changePassword:(query)->
+        unless query? && typeof query.password == "string" && typeof query.newpass == "string" && typeof query.newpass2 == "string"
+            res {error: i18n.t "common:error.invalidInput"}
+            return
         if query.newpass!=query.newpass2
             res {error: i18n.t "error.passwordInconsistent"}
             return
@@ -449,7 +526,10 @@ exports.actions =(req,res,ss)->
                 if err?
                     res {error: String err}
                     return
-                res userProfile(record, req.session.ban)
+                # パスワード変更で既存の自動ログイントークンを全て失効させる
+                Server.auth.revokeAllTokens req.session.userId, (err2)->
+                    console.error err2 if err2?
+                    res userProfile(record, req.session.ban)
     changeMailconfirmsecurity:(query)->
         M.users.findOne {"userid":req.session.userId}, (err, record)->
             if err?

@@ -45,6 +45,9 @@ module.exports =
     script:[
       "git pull"
     ]
+  login:
+    # 自動ログイン用トークンの有効期限（日）
+    tokenExpireDays: 3
   backdoor:
     # 外部のURL
     home: "http://uhyohyo.net/"

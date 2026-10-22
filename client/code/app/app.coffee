@@ -119,16 +119,37 @@ exports.init = ->
 
     # 旧バージョンが localStorage に残した平文パスワードを掃除する
     localStorage.removeItem "password"
-    # パスワードは localStorage に保存しない（セッション Cookie で維持する）
-    ss.rpc "user.hello", {}, (e)->
-        if e.banid
-            libban.saveBanData e.banid
-        else if e.forgive
-            libban.removeBanData()
-        else
-            checkBanData()
-
-    showUrl location.href
+    # 自動ログイン: パスワードではなくトークン（既定 3 日で失効）を使う
+    doAnonymous = ->
+        ss.rpc "user.hello", {}, (e)->
+            if e.banid
+                libban.saveBanData e.banid
+            else if e.forgive
+                libban.removeBanData()
+            else
+                checkBanData()
+        showUrl location.href
+    if localStorage.token
+        ss.rpc "user.loginWithToken", {token: localStorage.token}, (result)->
+            if result?.login
+                processLoginResult (localStorage.userid ? result.userid ? ""), result, ->
+                    p = location.href
+                    if location.pathname == "/" then p = "/my"
+                    showUrl p
+            else
+                # 失効・期限切れ。セッションが生きていればログイン状態を維持する
+                localStorage.removeItem "token"
+                ss.rpc "user.myProfile", (me)->
+                    if me?.userid
+                        processLoginResult me.userid, {login:true}, ->
+                            p = location.href
+                            if location.pathname == "/" then p = "/my"
+                            showUrl p
+                    else
+                        localStorage.removeItem "userid"
+                        doAnonymous()
+    else
+        doAnonymous()
 
     # 履歴の移動
     window.addEventListener "popstate",((e)->
@@ -316,9 +337,10 @@ exports.showUrl=showUrl=(url,query={},nohistory=false)->
             page "admin",null,Index.admin,null
         when "/logout"
             # ログアウト
-            ss.rpc "user.logout", ->
+            ss.rpc "user.logout", {token: localStorage.token}, ->
                 my_userid=null
                 localStorage.removeItem "userid"
+                localStorage.removeItem "token"
                 $("#username").empty()
                 $("#login").show()
                 $("#logout").hide()
@@ -380,9 +402,11 @@ exports.pushState=pushState=(url, query)->
 
 exports.refresh=->showUrl location.pathname, util.searchHash(location.search), true
 
-exports.login=login=(uid,ups,cb)->
-    ss.rpc "user.login", {userid:uid,password:ups},(result)->
-        processLoginResult uid, result, cb
+exports.login=login=(uid,ups,cb,rememberMe)->
+    ss.rpc "user.login", {userid:uid,password:ups,rememberMe:!!rememberMe},(result)->
+        # processLoginResult の cb は真偽値なので、トークンを含む生の result を渡す
+        processLoginResult uid, result, (success)->
+            cb? (if success then result else false)
 # Promise version of login.
 # Also it saves user into to localStorage.
 exports.loginPromise = (uid, ups)->
