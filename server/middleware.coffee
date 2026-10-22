@@ -65,9 +65,9 @@ exports.manualxhr=(request, response, next)->
         # マニュアルを送る
         fs.readFile "./manual/#{r[1]}.jade","utf-8",(err,data)->
             if err?
-                # ?
+                # エラー内容（絶対パス等）は返さない
                 response.writeHead 404,{'Content-Type':'text/plain; charset=UTF-8'}
-                response.end err.toString()
+                response.end "Not Found"
                 return
             fn=jade.compile data,{}
             unless fn?
