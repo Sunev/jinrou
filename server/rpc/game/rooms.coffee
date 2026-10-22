@@ -5,6 +5,32 @@ libready = require '../../libs/ready.coffee'
 
 i18n = libi18n.getWithDefaultNS 'rooms'
 
+# パスワード付きルームの enter 試行回数制限（プロセス内・IP+room 単位）
+ENTER_MAX_FAILURES = 10
+ENTER_WINDOW_MS = 10*60*1000
+enterFailures = {}
+pruneEnterFailures = ->
+    now = Date.now()
+    for k, v of enterFailures when now - v.first > ENTER_WINDOW_MS
+        delete enterFailures[k]
+enterKey = (req, roomid)->
+    "#{req.clientIp ? req.socket?.remoteAddress ? '?'}:#{roomid}"
+enterAllowed = (key)->
+    rec = enterFailures[key]
+    return true unless rec?
+    return true if Date.now() - rec.first > ENTER_WINDOW_MS
+    rec.count < ENTER_MAX_FAILURES
+recordEnterFailure = (key)->
+    now = Date.now()
+    rec = enterFailures[key]
+    if !rec? or now - rec.first > ENTER_WINDOW_MS
+        enterFailures[key] = {first: now, count: 1}
+        pruneEnterFailures()
+    else
+        rec.count += 1
+clearEnterFailures = (key)->
+    delete enterFailures[key]
+
 ###
 room: {
   id: Number
@@ -154,6 +180,11 @@ module.exports.actions=(req,res,ss)->
                         x.themeFullName = theme.name
             res results
     getMyRooms:(page, lastGameid)->
+        unless req.session.userId
+            res {error: i18n.t "common:error.needLogin"}
+            return
+        page = parseInt page, 10
+        page = 0 unless Number.isInteger(page) and page >= 0
         # extract user's play logs from userrawlogs
         # Use cursor-based pagination instead of $skip for 10-100x performance improvement
         
@@ -164,8 +195,10 @@ module.exports.actions=(req,res,ss)->
         
         # If lastGameid is provided, use range query instead of skip
         if lastGameid?
-            matchCondition.gameid =
-                $lt: lastGameid
+            lastGameid = parseInt lastGameid, 10
+            if Number.isInteger(lastGameid)
+                matchCondition.gameid =
+                    $lt: lastGameid
         
         stream = M.userrawlogs.aggregate([
             {
@@ -237,6 +270,10 @@ module.exports.actions=(req,res,ss)->
             res {error: String err}
 
     oneRoom:(roomid)->
+        unless (typeof roomid == "number" and Number.isInteger(roomid)) or (typeof roomid == "string" and /^\d+$/.test roomid)
+            res {error: i18n.t "common:error.invalidInput"}
+            return
+        roomid = parseInt roomid, 10
         M.rooms.findOne {id:roomid},(err,result)=>
             if err?
                 res {error:err}
@@ -282,7 +319,10 @@ module.exports.actions=(req,res,ss)->
         if query.password? && typeof query.password != "string"
             res {error: i18n.t "error.newRoom.invalidParameter"}
             return
-        maxNumber = parseInt query.number, 10
+        maxNumber = Number query.number
+        unless Number.isInteger(maxNumber)
+            res {error: i18n.t "error.newRoom.invalidParameter"}
+            return
         if maxNumber < 5
             res {error: i18n.t "error.newRoom.maxNumberTooSmall"}
             return
@@ -400,6 +440,10 @@ module.exports.actions=(req,res,ss)->
         unless req.session.userId
             res {error: i18n.t("common:error.needLogin"), require:"login"}    # ログインが必要
             return
+        unless (typeof roomid == "number" and Number.isInteger(roomid)) or (typeof roomid == "string" and /^\d+$/.test roomid)
+            res {error: i18n.t("common:error.invalidInput"), require:"login"}
+            return
+        roomid = parseInt roomid, 10
         M.users.findOne {userid:req.session.userId},(err,doc)->
             unless doc?
                 res {error:"请注册",require:"login"}    # 需要注册
@@ -784,6 +828,14 @@ module.exports.actions=(req,res,ss)->
         #unless req.session.userId
         #   res {error:"请登录"}
         #   return
+        unless (typeof roomid == "number" and Number.isInteger(roomid)) or (typeof roomid == "string" and /^\d+$/.test roomid)
+            res {error: i18n.t "common:error.invalidInput"}
+            return
+        roomid = parseInt roomid, 10
+        key = enterKey req, roomid
+        unless enterAllowed key
+            res {error: "密码尝试次数过多，请稍后再试。", require:"password"}
+            return
         Server.game.rooms.oneRoomS roomid,(room)=>
             if !room?
                 res {error: i18n.t "error.noSuchRoom"}
@@ -799,9 +851,11 @@ module.exports.actions=(req,res,ss)->
             else
                 null
             if room.password? && room.mode!="end" && room.made>od && room.password!=password && !(adminPass? && password==adminPass)
+                recordEnterFailure key
                 res {require:"password"}
                 return
             # enter 済みの印（join 側で検証）
+            clearEnterFailures key
             req.session.roompasswords ?= {}
             req.session.roompasswords[roomid] = Date.now()
             req.session.save()
