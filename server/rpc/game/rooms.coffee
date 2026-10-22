@@ -136,10 +136,14 @@ module.exports.actions=(req,res,ss)->
                 if x.password?
                     x.needpassword=true
                     delete x.password
-                if x.blind
-                    delete x.owner
+                if x.players?
                     x.players.forEach (p)->
-                        delete p.realid
+                        # 公開 API に IP / 内部 ID を出さない
+                        delete p.ip
+                        delete p.realid if x.blind
+                delete x.owner if x.blind
+                delete x.quitfromtheme
+                delete x.ban
                 unless x.watchspeak?
                     # old rooms do not have watchspeak set.
                     # watchspeak defaults to true.
@@ -187,6 +191,7 @@ module.exports.actions=(req,res,ss)->
                     if p.realid == req.session.userId
                         p.me = true
                     p.realid = undefined
+                    p.ip = undefined
             results.push x
         stream.on "end", ->
             # ここで結果を返す
@@ -232,8 +237,11 @@ module.exports.actions=(req,res,ss)->
         if query.name.length > Config.maxlength.room.name
             res {error: i18n.t "error.newRoom.nameTooLong"}
             return
-        if query.comment && query.comment.length > Config.maxlength.room.comment
+        if query.comment? && (typeof query.comment != "string" || query.comment.length > Config.maxlength.room.comment)
             res {error: i18n.t "error.newRoom.commentTooLong"}
+            return
+        if query.password? && typeof query.password != "string"
+            res {error: i18n.t "error.newRoom.invalidParameter"}
             return
         maxNumber = parseInt query.number, 10
         if maxNumber < 5
@@ -349,6 +357,7 @@ module.exports.actions=(req,res,ss)->
         sanitizeName = (name)->
             return name.replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '')
 
+        opt ?= {}
         opt.name = sanitizeName opt.name
 
         Server.game.rooms.oneRoomS roomid,(room)=>
@@ -361,6 +370,15 @@ module.exports.actions=(req,res,ss)->
             if Array.isArray(room.ban) && (req.session.userId in room.ban)
                 res error: i18n.t "error.join.kicked"
                 return
+            # パスワード付きルームは enter で認証済みのセッションのみ join を許可する
+            od=Date.now()-Config.rooms.fresh*3600000
+            if room.password? && room.mode!="end" && room.made>od
+                enteredAt = req.session.roompasswords?[roomid]
+                allowed = (enteredAt? && Date.now()-enteredAt < 10*60*1000) or
+                    (opt.password? && (opt.password==room.password || opt.password==Config.admin.password))
+                unless allowed
+                    res {error: "此房间需要密码。", require:"password"}
+                    return
             if opt.name in (room.players.map (x)->x.name)
                 res error: i18n.t "error.join.nameUsed", {name: opt.name}
                 return
@@ -680,6 +698,10 @@ module.exports.actions=(req,res,ss)->
             if room.password? && room.mode!="end" && room.made>od && room.password!=password && password!=Config.admin.password
                 res {require:"password"}
                 return
+            # enter 済みの印（join 側で検証）
+            req.session.roompasswords ?= {}
+            req.session.roompasswords[roomid] = Date.now()
+            req.session.save()
             req.session.channel.reset()
 
             req.session.channel.subscribe "room#{roomid}"

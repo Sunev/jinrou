@@ -695,8 +695,13 @@ class Game
         game
     # 公開情報
     publicinfo:(obj)->  #obj:オプション
+        # 内部情報(_jobquery など)をクライアントへ出さない
+        pubrule = @rule
+        if @rule?
+            pubrule = {}
+            pubrule[k] = v for k, v of @rule when k != "_jobquery"
         {
-            rule:@rule
+            rule:pubrule
             finished:@finished
             players:@players.map (x)=>
                 r=x.publicinfo()
@@ -15752,6 +15757,12 @@ module.exports.actions=(req,res,ss)->
     #ゲーム開始処理
     #成功：null
     gameStart:(roomid,query)->
+        unless req.session.userId
+            res i18n.t "error.common.needLogin"
+            return
+        unless query? && typeof query == "object"
+            res i18n.t "error.common.invalidQuery"
+            return
         game=games[roomid]
         unless game?
             res i18n.t "error.common.noSuchGame"
@@ -15763,6 +15774,10 @@ module.exports.actions=(req,res,ss)->
                 return
             if room.error?
                 res room.error
+                return
+            # 開始できるのは部屋のオーナー(GM)のみ
+            unless room.owner?.userid == req.session.userId or room.players.some((x)->x.realid==req.session.userId && x.mode=="gm")
+                res i18n.t "error.common.invalidQuery"
                 return
             unless room.mode=="waiting" && game.phase == Phase.preparing
                 # すでに開始している
@@ -17394,6 +17409,9 @@ module.exports.actions=(req,res,ss)->
             return
         if player.dead
             res game.i18n.t "error.will.alreadyDead"
+            return
+        if typeof will != "string" or will.length > Config.maxlength.game.comment
+            res game.i18n.t "error.common.invalidQuery"
             return
         player.setWill will
         res null
