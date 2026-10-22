@@ -111,6 +111,9 @@ exports.actions =(req,res,ss)->
     logout: ->
         #req.session.user.logout(cb)
         req.session.setUserId null
+        # 管理者/メンテナンス権限も破棄する
+        req.session.administer = false
+        req.session.maintenance = false
         req.session.channel.reset()
         req.session.save (err)->
             res()
@@ -199,7 +202,14 @@ exports.actions =(req,res,ss)->
                     null
 
                 res {
-                    user: record
+                    # 内部フィールド（password/salt/ip/mail 等）を返さない
+                    user:
+                        userid: record.userid
+                        name: record.name
+                        icon: record.icon
+                        comment: record.comment
+                        data_open_all: record.data_open_all
+                        data_open_recent: record.data_open_recent
                     userlog: userlog
                     usersummary: usersummary
                 }
@@ -234,7 +244,7 @@ exports.actions =(req,res,ss)->
             return
         # 計算に必要なカウンタだけ取得する(projection)
         M.userlogs.findOne {userid:req.session.userId}, {
-            fields: {
+            projection: {
                 wincount: true
                 losecount: true
                 winteamcount: true
@@ -349,7 +359,6 @@ exports.actions =(req,res,ss)->
                         address:doc.mail.new
                         verified:true
                 when "remove"
-                    delete doc.mail
                     # 事故をふせぐ
                     doc.mailconfirmsecurity = false
                 when "reset"
@@ -363,7 +372,17 @@ exports.actions =(req,res,ss)->
                         address:doc.mail.address
                         verified:doc.mail.verified
                     doc.mailconfirmsecurity = false
-            M.users.updateOne {"userid":doc.userid}, {$set: doc}, {safe:true},(err,count)=>
+            # remove の場合は $unset と $set の衝突を避けるため doc から mail を外す
+            delete doc.mail if strfor == "remove"
+            # _id は $set できない
+            delete doc._id
+            updateQuery = if strfor == "remove"
+                # $set では mail を消せないので $unset する
+                $unset: {mail: ""}
+                $set: doc
+            else
+                $set: doc
+            M.users.updateOne {"userid":doc.userid}, updateQuery, {safe:true},(err,count)=>
                 if err?
                     res {error: String err}
                     return
@@ -582,7 +601,9 @@ exports.actions =(req,res,ss)->
 
     # 私をBANしてください!!!!!!!!
     requestban:(banid)->
-        libblacklist.handleBanRequest banid, req.session.userId, req.clientIp, (result)->
+        # IP はクライアント指定/X-Forwarded-For 由来で詐称可能なので渡さない。
+        # （banid が既存 BAN を指す場合のみ userid を追記する）
+        libblacklist.handleBanRequest banid, req.session.userId, null, (result)->
             if result.error?
                 res {error: result.error}
             else if result.forgive
@@ -639,6 +660,10 @@ userProfile = (doc, ban)->
                     .join ""
     doc.prizeNumber = doc.prize?.length ? 0
     delete doc.prize
+    # クライアントへ返さない内部フィールド
+    delete doc.password
+    delete doc.salt
+    delete doc.ip
     if !doc.mail?
         doc.mail =
             address:""
@@ -679,7 +704,7 @@ getUserOpenData = (userid, cb)->
         }
     else
         M.users.findOne {"userid": userid}, {
-            fields: {
+            projection: {
                 userid: true
                 name: true
                 icon: true
