@@ -13,9 +13,8 @@ exports.start=->
                     Index.app.login query.userId, query.password, (result)->
                         if result
                             if query.rememberMe
-                                # 記憶
+                                # 記憶（パスワードは保存しない）
                                 localStorage.setItem "userid", query.userId
-                                localStorage.setItem "password", query.password
                             Index.app.showUrl "/my"
                             resolve {}
                         else
@@ -37,7 +36,6 @@ exports.start=->
                         Index.app.processLoginResult query.userId, result, (success)->
                             if success
                                 localStorage.setItem "userid", query.userId
-                                localStorage.setItem "password", query.password
                                 Index.app.showUrl "/my"
                         resolve {}
 

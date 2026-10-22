@@ -117,29 +117,18 @@ exports.init = ->
     setPhoneUI (localStorage.usePhoneUI != "false")
 
 
-    # 自動ログイン
-    if localStorage.userid && localStorage.password
-        login localStorage.userid, localStorage.password,(result)->
-            p = location.href
-            if result
-                p = location.href
-                if location.pathname == "/" then p = "/my"
-            else
-                #p="/"
-                # 無効
-                localStorage.removeItem "userid"
-                localStorage.removeItem "password"
-            showUrl p
-    else
-        ss.rpc "user.hello", {}, (e)->
-            if e.banid
-                libban.saveBanData e.banid
-            else if e.forgive
-                libban.removeBanData()
-            else
-                checkBanData()
+    # 旧バージョンが localStorage に残した平文パスワードを掃除する
+    localStorage.removeItem "password"
+    # パスワードは localStorage に保存しない（セッション Cookie で維持する）
+    ss.rpc "user.hello", {}, (e)->
+        if e.banid
+            libban.saveBanData e.banid
+        else if e.forgive
+            libban.removeBanData()
+        else
+            checkBanData()
 
-        showUrl location.href
+    showUrl location.href
 
     # 履歴の移動
     window.addEventListener "popstate",((e)->
@@ -330,7 +319,6 @@ exports.showUrl=showUrl=(url,query={},nohistory=false)->
             ss.rpc "user.logout", ->
                 my_userid=null
                 localStorage.removeItem "userid"
-                localStorage.removeItem "password"
                 $("#username").empty()
                 showUrl "/", {}, nohistory
         when "/logs"
@@ -400,7 +388,6 @@ exports.loginPromise = (uid, ups)->
             if result
                 # succeeded to login.
                 localStorage.setItem "userid", uid
-                localStorage.setItem "password", ups
                 resolve true
             else
                 resolve false
