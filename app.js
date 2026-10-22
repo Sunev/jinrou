@@ -5,6 +5,15 @@ const path = require('path');
 const cpx = require('cpx');
 const ss = require('socketstream');
 
+// 未捕捉例外/未処理 Promise でプロセスを落とさない（DoS 緩和）。
+// 状態不整合の可能性はあるため、必ずログに残す。
+process.on('uncaughtException', (err) => {
+  console.error('uncaughtException', err && (err.stack || err));
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('unhandledRejection', reason && (reason.stack || reason));
+});
+
 ss.client.define('main', {
   view: 'app.jade',
   css: ['libs', 'app.styl'],
@@ -100,6 +109,7 @@ if (isProduction) {
 }
 //---- Middleware
 const middleware = require('./server/middleware.coffee');
+ss.http.middleware.prepend(middleware.securityheaders);
 ss.http.middleware.prepend(middleware.jsonapi);
 ss.http.middleware.prepend(middleware.manualxhr);
 ss.http.middleware.prepend(middleware.images);
