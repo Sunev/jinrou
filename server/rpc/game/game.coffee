@@ -17271,6 +17271,10 @@ module.exports.actions=(req,res,ss)->
                     # ごちゃごちゃ言わない
                 else
                     if result=query.mode?.match /^gmreply_(.+)$/
+                        # GM 以外は GM 私信を詐称できない
+                        unless player? && player.isJobType("GameMaster")
+                            res null
+                            return
                         log.mode="gmreply"
                         pl=game.getPlayer result[1]
                         unless pl?
@@ -17279,6 +17283,10 @@ module.exports.actions=(req,res,ss)->
                         log.to=pl.id
                         log.name="GM→#{pl.name}"
                     else if result=query.mode?.match /^helperwhisper_(.+)$/
+                        # ヘルパー/GM 以外はヘルパー私信を詐称できない
+                        unless player? && (player.isJobType("Helper") || player.isJobType("GameMaster"))
+                            res null
+                            return
                         log.mode="helperwhisper"
                         log.to=result[1]
 

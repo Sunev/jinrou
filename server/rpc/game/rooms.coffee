@@ -214,6 +214,9 @@ module.exports.actions=(req,res,ss)->
                 unless result.blind == "" || pl?.mode == "gm"
                     delete p.realid
                 delete p.ip
+            delete result.quitfromtheme
+            delete result.ban
+            delete result.owner if result.blind
             # ふるいかどうか
             if result.made < Date.now()-Config.rooms.fresh*3600000
                 result.old=true
@@ -374,8 +377,12 @@ module.exports.actions=(req,res,ss)->
             od=Date.now()-Config.rooms.fresh*3600000
             if room.password? && room.mode!="end" && room.made>od
                 enteredAt = req.session.roompasswords?[roomid]
+                adminPass = if typeof Config.admin.password == "string" and Config.admin.password.length > 0
+                    Config.admin.password
+                else
+                    null
                 allowed = (enteredAt? && Date.now()-enteredAt < 10*60*1000) or
-                    (opt.password? && (opt.password==room.password || opt.password==Config.admin.password))
+                    (opt.password? && (opt.password==room.password || (adminPass? && opt.password==adminPass)))
                 unless allowed
                     res {error: "此房间需要密码。", require:"password"}
                     return
@@ -695,7 +702,12 @@ module.exports.actions=(req,res,ss)->
                 return
             # 古い部屋ならパスワードいらない
             od=Date.now()-Config.rooms.fresh*3600000
-            if room.password? && room.mode!="end" && room.made>od && room.password!=password && password!=Config.admin.password
+            # マスターパスワードは「空でない文字列」のときだけ有効
+            adminPass = if typeof Config.admin.password == "string" and Config.admin.password.length > 0
+                Config.admin.password
+            else
+                null
+            if room.password? && room.mode!="end" && room.made>od && room.password!=password && !(adminPass? && password==adminPass)
                 res {require:"password"}
                 return
             # enter 済みの印（join 側で検証）
