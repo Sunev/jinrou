@@ -1,7 +1,5 @@
 # Server-side Code
-crypto=require('crypto')
 child_process=require('child_process')
-settings=Config.mongo
 
 libblacklist = require '../libs/blacklist.coffee'
 libi18n      = require '../libs/i18n.coffee'
@@ -75,71 +73,6 @@ exports.actions =(req,res,ss)->
             # twitterへ配信
             oauth.tweet "#{query.message} ##{Config.name}",Config.admin.password
         res null
-    # -------------- dataexport関係
-    dataExport:(query)->
-        unless query?
-            res {error: i18n.t "common:error.invalidInput"}
-            return
-        unless Config.admin.securityHole
-            res {error: i18n.t "error.unavailable"}
-            return
-
-        sha256=crypto.createHash "sha256"
-        sha256.update query.pass
-        phrase=sha256.digest 'hex'
-        unless phrase=='d77696ef7b89048f9e68d671da5fc825f9f2e9791fcef52c4c482d608beb49e2'
-            res {error: i18n.t "error.wrongPassword"}
-            return
-        child = child_process.exec "mongodump -d #{settings.database} -u #{settings.user} -p #{settings.pass} -o ./public/dump", (error,stdout,stderr)->
-            if error?
-                res {error:stderr}
-                return
-            # dumpに成功した
-            child_process.exec "zip -r ./public/dump/#{settings.database}.zip ./public/dump/#{settings.database}/",(error,stdout,stderr)->
-                if error?
-                    res {error:stdout || stderr}
-                    return
-                console.log stdout
-                res {file:"/dump/#{settings.database}.zip"}
-
-    # ------------- process関係
-    doCommand:(query)->
-        # 僕だけだよ！ あの文字列を送ろう
-        unless query?
-            res {error: i18n.t "common:error.invalidInput"}
-            return
-        unless Config.admin.securityHole
-            res {error: i18n.t "error.unavailable"}
-            return
-        if pro?
-            # まだ起動している
-            pro.kill()
-
-        sha256=crypto.createHash "sha256"
-        sha256.update query.pass
-        phrase=sha256.digest 'hex'
-        unless phrase=='d77696ef7b89048f9e68d671da5fc825f9f2e9791fcef52c4c482d608beb49e2'
-            res {error: i18n.t "error.wrongPassword"}
-            return
-        if query.command=="show_dbinfo"
-            res result:"#{settings.database}:#{settings.user}:#{settings.pass}"
-            return
-        pro = child_process.exec query.command, (error,stdout,stderr)->
-            pro=null
-            if error?
-                res {error:stderr || stdout}
-                return
-            res {result:stdout}
-    startProcess:(cmd)->
-        if pro?
-            res {error: i18n.t "error.unavailable"}
-            return
-        unless typeof cmd=="string"
-            res {error: i18n.t "common:error.invalidInput"}
-            return
-        args=cmd.split " "
-        comm=args.shift()
-        pro= child_process.spawn comm,args
     #   关闭陈旧房间
     # 关闭陈旧房间
     shutdownExpireRooms: ->
@@ -217,5 +150,3 @@ exports.actions =(req,res,ss)->
             unless doc?
                 M.news.insertOne addquery,{safe:true},(err,doc)->
                     res null
-
-pro=null    # 現在のプロセス
