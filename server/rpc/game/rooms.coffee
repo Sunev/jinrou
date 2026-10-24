@@ -289,7 +289,6 @@ module.exports.actions=(req,res,ss)->
                 delete p.ip
             delete result.quitfromtheme
             delete result.ban
-            delete result.owner if result.blind
             # ふるいかどうか
             if result.made < Date.now()-Config.rooms.fresh*3600000
                 result.old=true
