@@ -129,27 +129,37 @@ exports.init = ->
             else
                 checkBanData()
         showUrl location.href
+    # セッション Cookie が生きていれば、token が無くてもログイン状態を復元する。
+    # （これが無いと my_userid が null のままになり、per-user の getjob が
+    #   channel==Index.app.userid() で全部捨てられてしまう）
+    restoreSession = ->
+        ss.rpc "user.myProfile", (me)->
+            if me?.userid
+                # セッションの userId を正とする（localStorage の古い値は使わない）
+                localStorage.setItem "userid", me.userid
+                processLoginResult me.userid, {login:true}, ->
+                    p = location.href
+                    if location.pathname == "/" then p = "/my"
+                    showUrl p
+            else
+                localStorage.removeItem "userid"
+                doAnonymous()
     if localStorage.token
         ss.rpc "user.loginWithToken", {token: localStorage.token}, (result)->
             if result?.login
-                processLoginResult (localStorage.userid ? result.userid ? ""), result, ->
+                # token の持ち主を正とする（localStorage.userid が古い場合がある）
+                localStorage.setItem "userid", result.userid
+                processLoginResult result.userid, result, ->
                     p = location.href
                     if location.pathname == "/" then p = "/my"
                     showUrl p
             else
                 # 失効・期限切れ。セッションが生きていればログイン状態を維持する
                 localStorage.removeItem "token"
-                ss.rpc "user.myProfile", (me)->
-                    if me?.userid
-                        processLoginResult me.userid, {login:true}, ->
-                            p = location.href
-                            if location.pathname == "/" then p = "/my"
-                            showUrl p
-                    else
-                        localStorage.removeItem "userid"
-                        doAnonymous()
+                restoreSession()
     else
-        doAnonymous()
+        # token が無くても、セッション Cookie でログインしている可能性がある
+        restoreSession()
 
     # 履歴の移動
     window.addEventListener "popstate",((e)->
