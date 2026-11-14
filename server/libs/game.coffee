@@ -141,6 +141,30 @@ exports.judgeQuantumWerewolf = (quantum_patterns, players)->
     return null
 
 
+# One fox per world. A missing living fox means the village caught it.
+livingQuantumFox = (world)->
+    for id, state of world
+        if state.jobtype == "Fox" && !state.dead
+            return id
+    null
+
+exports.judgeQuantumFox = (quantum_patterns, players)->
+    return null unless quantum_patterns.length
+    alives = players.filter((player)-> !player.dead).length
+    # At zero survivors the original parity comparison also holds (0 >= 0).
+    team = if alives == 0 then "Human" else exports.judgeQuantumWerewolf quantum_patterns, players
+    return null unless team?
+
+    if team == "Human" && alives > 2
+        # Keep hunting while worlds disagree about who the living fox is (if any).
+        firstFox = livingQuantumFox quantum_patterns[0]
+        return null unless quantum_patterns.every (world)-> livingQuantumFox(world) == firstFox
+
+    world = quantum_patterns[Math.floor(Math.random() * quantum_patterns.length)]
+    team = "Fox" if livingQuantumFox(world)?
+    {team, world}
+
+
 # Checks whether given player wins.
 # This function should be used in `isWinner` method and propagate passed context to this method.
 # Context is used for preventing infinite loops.

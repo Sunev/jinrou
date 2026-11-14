@@ -131,6 +131,7 @@ export interface ProbabilityTableLog extends LogBase {
       Human: number;
       Diviner: number;
       Werewolf: number;
+      Fox?: number;
       dead: number;
     }
   >;

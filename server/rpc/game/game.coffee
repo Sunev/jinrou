@@ -15,6 +15,7 @@ libspeak     = require '../../libs/speak.coffee'
 
 cron=require 'cron'
 i18n = libi18n.getWithDefaultNS "game"
+QUANTUM_FOX_RULE = "特殊规则.量子人狼（妖狐）"
 
 # 身代わりセーフティありのときの除外役職一覧
 SAFETY_EXCLUDED_JOBS = Shared.game.SAFETY_EXCLUDED_JOBS
@@ -546,6 +547,38 @@ Server=
     oauth:require '../../oauth.coffee'
     log:require '../../log.coffee'
 
+# One byte per seat keeps all 11,880 starting worlds well below MongoDB's document limit.
+# Seats use the order in the same document's players array. The low bit records death.
+quantumFoxJobs = ["Human", "Diviner", "Fox", "Werewolf", "Werewolf"]
+packQuantumFoxWorlds = (worlds, players)->
+    bytes = Buffer.alloc(worlds.length * players.length)
+    offset = 0
+    for world in worlds
+        for player in players
+            state = world[player.id]
+            job = if state.jobtype == "Werewolf" then 2 + state.rank else quantumFoxJobs.indexOf(state.jobtype)
+            bytes[offset++] = job * 2 + Number(state.dead)
+    bytes.toString("base64")
+
+unpackQuantumFoxWorlds = (snapshot, players)->
+    bytes = Buffer.from(snapshot, "base64")
+    return [] unless bytes.length
+    unless players.length && bytes.length % players.length == 0
+        throw new Error("Invalid quantum fox snapshot size")
+    worlds = []
+    offset = 0
+    while offset < bytes.length
+        world = {}
+        for player in players
+            byte = bytes[offset++]
+            job = byte >> 1
+            throw new Error("Invalid quantum fox role") unless quantumFoxJobs[job]?
+            state = {jobtype: quantumFoxJobs[job], dead: !!(byte & 1)}
+            state.rank = job - 2 if state.jobtype == "Werewolf"
+            world[player.id] = state
+        worlds.push world
+    worlds
+
 class Game
     constructor:(@ss,room)->
         @i18n = i18n
@@ -714,7 +747,7 @@ class Game
         ###
     # JSON用object化(DB保存用）
     serialize:->
-        {
+        doc = {
             id:@id
             #logs:@logs
             rule:@rule
@@ -733,12 +766,14 @@ class Game
             werewolf_flag:@werewolf_flag
             werewolf_target:@werewolf_target
             werewolf_target_remain:@werewolf_target_remain
-            #quantum_patterns:@quantum_patterns
             finish_time:@finish_time
             log_save_mode: @log_save_mode
             # 発言短IDの付与状況（ユーザーには見せない内部フラグ）
             shortIdEnabled: @shortIdEnabled
         }
+        if @rule?.jobrule == QUANTUM_FOX_RULE
+            doc.quantumFoxWorlds = if @finished then null else packQuantumFoxWorlds(@quantum_patterns, @players)
+        doc
     #DB用をもとにコンストラクト
     @unserialize:(obj,ss)->
         game=new Game ss
@@ -822,7 +857,10 @@ class Game
                         supporters.push newpl
                 game.participants=game.players.concat supporters
 
-        game.quantum_patterns=obj.quantum_patterns ? []
+        game.quantum_patterns = if obj.quantumFoxWorlds?
+            unpackQuantumFoxWorlds obj.quantumFoxWorlds, game.players
+        else
+            obj.quantum_patterns ? []
         game.finish_time=obj.finish_time ? null
         unless game.finished
             if game.rule
@@ -1259,7 +1297,7 @@ class Game
                 @participants.push helper
 
         # 量子人狼の場合はここで可能性リストを作る
-        if @rule.jobrule=="特殊规则.量子人狼"
+        if Shared.game.isQuantumRule @rule.jobrule
             # パターンを初期化（最初は全パターン）
             quats=[]    # のとみquantum_patterns
             pattern_no=0    # とばす
@@ -1409,64 +1447,27 @@ class Game
     updateQuantumProbability:->
         probability_table={}
         numberref_table={}
+        hasFox = @rule.jobrule == QUANTUM_FOX_RULE
+        worlds = @quantum_patterns.length
         for x in @players
-            count=
-                Human:0
-                Diviner:0
-                Werewolf:0
-                dead:0
+            count = {Human:0, Diviner:0, Werewolf:0, dead:0}
+            count.Fox = 0 if hasFox
             for obj in @quantum_patterns
-                count[obj[x.id].jobtype]++
-                if obj[x.id].dead==true
-                    count.dead++
-            sum=count.Human+count.Diviner+count.Werewolf
-            pflag=JSON.parse x.flag
-            if sum==0
-                # 世界が崩壊した
-                x.setFlag JSON.stringify {
-                    number:pflag?.number
-                    Human:0
-                    Diviner:0
-                    Werewolf:0
-                    dead:0
-                }
-                # ログ用
-                probability_table[x.id]={
-                    name:x.name
-                    Human:0
-                    Werewolf:0
-                }
-                if @rule.quantumwerewolf_dead!="no"
-                    #死亡確率も
-                    probability_table[x.id].dead=0
-                if @rule.quantumwerewolf_diviner=="on"
-                    # 占い師の確率も
-                    probability_table[x.id].Diviner=0
-            else
-                x.setFlag JSON.stringify {
-                    number:pflag?.number
-                    Human:count.Human/sum
-                    Diviner:count.Diviner/sum
-                    Werewolf:count.Werewolf/sum
-                    dead:count.dead/sum
-                }
-                # ログ用
-                if @rule.quantumwerewolf_diviner=="on"
-                    probability_table[x.id]={
-                        name:x.name
-                        Human:count.Human/sum
-                        Diviner:count.Diviner/sum
-                        Werewolf:count.Werewolf/sum
-                    }
-                else
-                    probability_table[x.id]={
-                        name:x.name
-                        Human:(count.Human+count.Diviner)/sum
-                        Werewolf:count.Werewolf/sum
-                    }
-                if @rule.quantumwerewolf_dead!="no" || count.dead==sum
-                    # 死亡率も
-                    probability_table[x.id].dead=count.dead/sum
+                state = obj[x.id]
+                count[state.jobtype]++
+                count.dead++ if state.dead
+            pflag = JSON.parse x.flag
+            flag = {number: pflag?.number}
+            for key, value of count
+                flag[key] = if worlds then value/worlds else 0
+            x.setFlag JSON.stringify flag
+            row = probability_table[x.id] = {name:x.name, Human:flag.Human, Werewolf:flag.Werewolf}
+            row.Fox = flag.Fox if hasFox
+            if @rule.quantumwerewolf_diviner == "on"
+                row.Diviner = flag.Diviner
+            else if worlds
+                row.Human = (count.Human + count.Diviner)/worlds
+            row.dead = flag.dead if @rule.quantumwerewolf_dead != "no" || flag.dead == 1
             if @rule.quantumwerewolf_table=="anonymous"
                 # 番号を表示
                 numberref_table[pflag.number]=x
@@ -1484,26 +1485,24 @@ class Game
             )(probability_table,numberref_table)
         probability_table
 
+    settleQuantumDeaths:->
+        return false if @rule.jobrule == QUANTUM_FOX_RULE && !@quantum_patterns.length
+        anyDeath = false
+        loop
+            changed = false
+            for pl in @players when !pl.dead
+                if @quantum_patterns.every((world)-> world[pl.id].dead)
+                    pl.die this, "werewolf"
+                    changed = true if pl.dead
+            break unless changed
+            anyDeath = true
+        anyDeath
+
     beginturn:->
         night = Phase.isNight @phase
 
-        if @rule.jobrule=="特殊规则.量子人狼"
-            # 量子人狼
-            # 死亡が確定した(どの世界線でも死んでいる)プレイヤーを死亡させる
-            dead_flg=true
-            while dead_flg
-                dead_flg=false
-                for x in @players
-                    if x.dead
-                        continue
-                    dead=0
-                    for obj in @quantum_patterns
-                        if obj[x.id].dead==true
-                            dead++
-                    if dead==@quantum_patterns.length
-                        # 死んだ!!!!!!!!!!!!!!!!!
-                        x.die this, "werewolf"
-                        dead_flg=true
+        if Shared.game.isQuantumRule @rule.jobrule
+            @settleQuantumDeaths()
             # 全員の確率を出してあげるよーーーーー
             # 確率テーブルを作り @flag を更新する
             probability_table=@updateQuantumProbability()
@@ -1765,7 +1764,9 @@ class Game
                 @silentexpires=Date.now()+@rule.silentrule*1000 # これまでは黙っていよう！
         @timer()
         if night
-            @checkjobs()
+            # 猎狐时若连存活的占卜师都不再可能，就无需等待固定夜长。
+            skipEmptyNight = @rule.jobrule == QUANTUM_FOX_RULE && @players.every((pl)=>pl.dead || pl.sleeping(@))
+            @checkjobs skipEmptyNight
         @save()
     # 各プレイヤーのsunset処理を行う
     runSunset:->
@@ -2576,6 +2577,10 @@ class Game
         if @finished
             return true
 
+        # 处刑可能使别处过去的袭击或咒杀确定；先结算连锁死亡，再判断狼数和末两人。
+        if @rule.jobrule == QUANTUM_FOX_RULE && @settleQuantumDeaths()
+            @bury "other"
+
         aliveps=@players.filter (x)->!x.dead    # 生きている人を集める
         # 数える
         alives=aliveps.length
@@ -2590,7 +2595,7 @@ class Game
         friends_count=null
 
         # 量子人狼のときは特殊ルーチン
-        if @rule.jobrule=="特殊规则.量子人狼"
+        if Shared.game.isQuantumRule @rule.jobrule
             obj=@quantum_patterns[0]
             if obj?
                 # 世界線は beginturn 以外(処刑・襲撃など)でも収束するので,
@@ -2598,8 +2603,18 @@ class Game
                 # (@flag は勝敗を各プレイヤーに配る isWinner からも見られる)
                 # 作り直さないと, 処刑された確定人狼が「生存中の人狼」として
                 # 数えられ, 人狼勝利と誤判定してしまう(room 250799).
-                @updateQuantumProbability()
-                team=libgame.judgeQuantumWerewolf @quantum_patterns, @players
+                if @rule.jobrule == QUANTUM_FOX_RULE
+                    result = libgame.judgeQuantumFox(@quantum_patterns, @players)
+                    if result?
+                        team = result.team
+                        @quantum_patterns = [result.world]
+                        @bury "other" if @settleQuantumDeaths()
+                        splashlog @id, this, {mode:"probability_table", probability_table:@updateQuantumProbability()}
+                    else
+                        @updateQuantumProbability()
+                else
+                    @updateQuantumProbability()
+                    team=libgame.judgeQuantumWerewolf @quantum_patterns, @players
             else
                 # もうひとつもないんだ・・・
                 log=
@@ -7198,6 +7213,8 @@ class QuantumPlayer extends Player
             jobname = @game.i18n.t "roles:jobname.Diviner"
         else if flag.Werewolf==1
             jobname = @game.i18n.t "roles:jobname.Werewolf"
+        else if flag.Fox==1
+            jobname = @game.i18n.t "roles:jobname.Fox"
 
         numstr=""
         if flag.number?
@@ -7219,7 +7236,10 @@ class QuantumPlayer extends Player
         tarobj=
             Diviner:null
             Werewolf:null
-        if obj.Diviner==0
+        canDivine = obj.Diviner != 0
+        if canDivine && game.rule.jobrule == QUANTUM_FOX_RULE
+            canDivine = game.quantum_patterns.some (world)=>world[@id].jobtype == "Diviner" && !world[@id].dead
+        if !canDivine
             tarobj.Diviner=""   # なし
         if obj.Werewolf==0 || (game.rule.quantumwerewolf_firstattack!="on" && game.day==1)
             tarobj.Werewolf=""
@@ -7289,6 +7309,8 @@ class QuantumPlayer extends Player
                         # 村人のやつ以外排除
                         game.quantum_patterns=game.quantum_patterns.filter (obj)=>
                             if obj[@id].jobtype=="Diviner"# && obj[@id].dead==false
+                                if !obj[@id].dead && obj[pl.id].jobtype == "Fox"
+                                    obj[pl.id].dead = true
                                 obj[pl.id].jobtype!="Werewolf"
                             else
                                 true
@@ -7303,22 +7325,15 @@ class QuantumPlayer extends Player
             pl=game.getPlayer tarobj.Werewolf
             if pl?
                 game.quantum_patterns=game.quantum_patterns.filter (obj)=>
-                    # 何番が筆頭かを求める
-                    min=Infinity
-                    for key,value of obj
-                        if value.jobtype=="Werewolf" && value.dead==false && value.rank<min
-                            min=value.rank
-                    if obj[@id].jobtype=="Werewolf" && obj[@id].rank==min && obj[@id].dead==false
-                        # 自分が筆頭人狼
-                        if obj[pl.id].jobtype == "Werewolf"# || obj[pl.id].dead==true
-                            # 襲えない
-                            false
-                        else
-                            # さらに対応するやつを死亡させる
-                            obj[pl.id].dead=true
-                            true
-                    else
-                        true
+                    wolf = obj[@id]
+                    return true unless wolf.jobtype == "Werewolf" && !wolf.dead
+                    if wolf.rank > 1
+                        for id, other of obj
+                            return true if other.jobtype == "Werewolf" && !other.dead && other.rank < wolf.rank
+                    target = obj[pl.id]
+                    return false if target.jobtype == "Werewolf"
+                    target.dead = true unless target.jobtype == "Fox"
+                    true
 
     isWinner:(game,team)->
         flag=JSON.parse @flag
@@ -7328,7 +7343,9 @@ class QuantumPlayer extends Player
         if flag.Werewolf==1 && team=="Werewolf"
             # 人狼がかったぞ!!!!!
             true
-        else if flag.Werewolf==0 && team=="Human"
+        else if flag.Fox==1 && flag.dead==0 && team=="Fox"
+            true
+        else if flag.Werewolf==0 && !flag.Fox && team=="Human"
             # 人間がかったぞ!!!!!
             true
         else
@@ -7342,7 +7359,9 @@ class QuantumPlayer extends Player
         if flag.Werewolf == 1
             # 人狼に確定しているので人狼陣営
             return "Werewolf"
-        if flag.Werewolf == 0
+        if flag.Fox == 1
+            return "Fox"
+        if flag.Werewolf == 0 && !flag.Fox
             # 人狼でないことが確定しているので村人陣営
             return "Human"
         # 未確定なのでなし
@@ -7386,6 +7405,8 @@ class QuantumPlayer extends Player
             index=Math.floor Math.random()*pats.length
             tjt=pats[index][@id].jobtype
             trk=pats[index][@id].rank
+            if tjt == "Fox" && found == "werewolf"
+                game.getPlayer(@id).setDead true, "curse"
             if trk?
                 pats=pats.filter (obj)=>
                     obj[@id].jobtype==tjt && obj[@id].rank==trk
@@ -15982,11 +16003,15 @@ module.exports.actions=(req,res,ss)->
                     players.push pl
                 else
                     supporters.push pl
+            query.scapegoat = "off" if query.jobrule == QUANTUM_FOX_RULE
             frees=players.length
             if query.scapegoat=="on"    # 身代わりくん
                 frees++
             playersnumber=frees
             # 人数の確認
+            if query.jobrule == QUANTUM_FOX_RULE && !(6 <= playersnumber <= 12)
+                res game.i18n.t "error.gamestart.quantumFoxPlayerCount"
+                return
             if playersnumber<6
                 res game.i18n.t "error.gamestart.playerNotEnough", {count: 6}
                 return
@@ -15998,7 +16023,7 @@ module.exports.actions=(req,res,ss)->
             if query.chemical=="on"
                 frees *= 2
                 # 黑暗火锅と量子人狼は無理
-                if query.jobrule in ["特殊规则.Endless黑暗火锅","特殊规则.量子人狼"]
+                if query.jobrule == "特殊规则.Endless黑暗火锅" || Shared.game.isQuantumRule(query.jobrule)
                     res game.i18n.t "error.gamestart.noChemical"
                     return
 
@@ -17046,9 +17071,9 @@ module.exports.actions=(req,res,ss)->
                     # セーフティ超
                     joblist=best_list
 
-            else if query.jobrule=="特殊规则.量子人狼"
+            else if Shared.game.isQuantumRule query.jobrule
                 # 量子人狼のときは全員量子人間だけど役職はある
-                func=Shared.game.getrulefunc "内部利用.量子人狼"
+                func=Shared.game.getrulefunc(if query.jobrule == QUANTUM_FOX_RULE then "内部利用.量子人狼（妖狐）" else "内部利用.量子人狼")
                 joblist=func frees
                 sum=0
                 for job of jobs
@@ -17208,7 +17233,7 @@ module.exports.actions=(req,res,ss)->
                 res err
                 return
 
-            if ruleobj.rolerequest=="on" && !(query.jobrule in ["特殊规则.黑暗火锅","特殊规则.手调黑暗火锅","特殊规则.量子人狼","特殊规则.Endless黑暗火锅"])
+            if ruleobj.rolerequest=="on" && !Shared.game.isQuantumRule(query.jobrule) && !(query.jobrule in ["特殊规则.黑暗火锅","特殊规则.手调黑暗火锅","特殊规则.Endless黑暗火锅"])
                 # 希望役職制あり
                 # とりあえず入れなくする
                 # This write is fire-and-forget (the room is updated without

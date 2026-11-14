@@ -55,6 +55,10 @@ exports.start=->
                         rule:null
                     }
                     {
+                        name:"量子人狼（妖狐）"
+                        rule:null
+                    }
+                    {
                         name:"Endless黑暗火锅"
                         rule:null
                     }

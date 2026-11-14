@@ -738,6 +738,14 @@ getLabeledGroupsOfJobrules = ()->
                     }
         return result
     res = f Shared.game.jobrules, []
+    quantumOptions =
+        night:
+            type: 'range'
+            max: 60
+        scapegoat:
+            type: 'string'
+            value: 'off'
+            must: true
     # 特殊配役を追加
     res.push {
         type: 'group'
@@ -778,14 +786,18 @@ getLabeledGroupsOfJobrules = ()->
                     id: '特殊规则.量子人狼'
                     roleSelect: false
                     preset: Shared.game.getrulefunc "内部利用.量子人狼"
-                    suggestedOptions:
-                        night:
-                            type: 'range'
-                            max: 60
-                        scapegoat:
-                            type: 'string'
-                            value: 'off'
-                            must: true
+                    suggestedOptions: quantumOptions
+            }
+            {
+                type: 'item'
+                value:
+                    id: '特殊规则.量子人狼（妖狐）'
+                    roleSelect: false
+                    preset: Shared.game.getrulefunc "内部利用.量子人狼（妖狐）"
+                    suggestedOptions: quantumOptions
+                    suggestedPlayersNumber:
+                        min: 6
+                        max: 12
             }
             {
                 type: 'item'
