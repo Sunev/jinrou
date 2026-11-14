@@ -169,7 +169,7 @@ Found =
         found in ["werewolf"]
     # whether this is a guardable attack.
     isGuardableAttack:(found)->
-        found in ["vampire", "nineTailedFox", "landmineAssassinate"] || Found.isGuardableWerewolfAttack(found)
+        found in ["vampire", "nineTailedFox", "doomsdayYandere", "landmineAssassinate"] || Found.isGuardableWerewolfAttack(found)
     # whether this is a werewolf attack.
     isNormalWerewolfAttack: (found)->
         found in ["werewolf", "trickedWerewolf"]
@@ -2154,7 +2154,7 @@ class Game
             x = obj.pl
             situation=switch obj.found
                 #死因
-                when "werewolf","werewolf2","trickedWerewolf","nineTailedFox","poison","hinamizawa","vampire","vampire2","witch","dog","trap","marycurse","psycho","crafty","greedy","tough","lunaticlover","hooligan","dragon","samurai","elemental","sacrifice","lorelei","oni","selfdestruct","assassinate","landmineAssassinate","ghostrevenge"
+                when "werewolf","werewolf2","trickedWerewolf","nineTailedFox","doomsdayYandere","poison","hinamizawa","vampire","vampire2","witch","dog","trap","marycurse","psycho","crafty","greedy","tough","lunaticlover","hooligan","dragon","samurai","elemental","sacrifice","lorelei","oni","selfdestruct","assassinate","landmineAssassinate","ghostrevenge"
                     @i18n.t "found.normal", {name: x.name}
                 when "bomb"
                     @i18n.t "found.normal", {name: x.name}
@@ -2197,7 +2197,7 @@ class Game
             # Show invisible detail of death
             # but do not show for obvious type of death.
             unless (obj.found in ["punish", "infirm", "bonds", "hunter", "gm", "gone-day", "gone-night"]) || (obj.found == "curse" && @rule.deadfox == "obvious")
-                if ["werewolf","werewolf2","trickedWerewolf","nineTailedFox","poison","hinamizawa",
+                if ["werewolf","werewolf2","trickedWerewolf","nineTailedFox","doomsdayYandere","poison","hinamizawa",
                     "vampire","vampire2","witch","dog","trap","bomb",
                     "marycurse","psycho","curse","punish","spygone","deathnote","sacrificed","nekikill",
                     "foxsuicide","friendsuicide","twinsuicide","dragonknightsuicide","vampiresuicide","santasuicide","fascinatesuicide","loreleisuicide"
@@ -2221,6 +2221,8 @@ class Game
                         "werewolf"
                     when "nineTailedFox"
                         "nineTailedFox"
+                    when "doomsdayYandere"
+                        "doomsdayYandere"
                     when "poison","witch"
                         "poison"
                     when "hinamizawa"
@@ -2639,6 +2641,11 @@ class Game
                 if lw?.getTeam() == "LoneWolf"
                     team="LoneWolf"
 
+            if team == "Werewolf"
+                doomsdayWin = aliveps.some (pl)=>
+                    getAllMainRoles(pl).some((role)=> role.type == "DoomsdayYandere" && role.canWinAfterAwakening(this)) && pl.isWinner(this, "Friend")
+                team = "Friend" if doomsdayWin
+
             if team?
                 # 妖狐判定
                 if @players.some((x)->!x.dead && x.isFox())
@@ -2735,6 +2742,10 @@ class Game
             if @players.some(isDevilWinner)
                 team="Devil"
 
+            # 狼数だけを持つ役職では人狼勝利にしない。妖狐などの割り込みは先に判定する。
+            if team == "Werewolf" && wolves > 0 && !aliveps.some((pl)->pl.isWerewolf())
+                team = null
+
         if @revote_num>=4 && !team?
             # 再投票多すぎ
             team="Draw" # 引き分け
@@ -2801,7 +2812,9 @@ class Game
                 when "Devil"
                     [@i18n.t("judge.devil"),@i18n.t("judge.short.devil")]
                 when "Friend"
-                    if friends_count>1
+                    if doomsdayWin
+                        [@i18n.t("judge.doomsdayYandere"),@i18n.t("judge.short.friends")]
+                    else if friends_count>1
                         # みんなで勝利（珍しい）
                         [@i18n.t("judge.friendsAll"),@i18n.t("judge.short.friends")]
                     else
@@ -4047,7 +4060,7 @@ class Hero extends Human
     sunset:(game)-> @awaken game, "count" if @shouldAwakenByCount game
     hasDeadResistance:->true
     checkDeathResistance:(game, found, from)->
-        if !@flag?.attackResisted && found in ["werewolf", "nineTailedFox", "vampire"]
+        if !@flag?.attackResisted && found in ["werewolf", "nineTailedFox", "doomsdayYandere", "vampire"]
             flag = @getHeroFlag()
             flag.revealed = true
             flag.attackResisted = true
@@ -5033,8 +5046,8 @@ class Poisoner extends Player
                 canbedead=canbedead.filter (x)->x.isWerewolf() && x.isAttacker()
         else if found in ["vampire", "nineTailedFox"]
             canbedead=canbedead.filter (x)->x.id==from
-        else if found=="landmineAssassinate"
-            # 地雷少女の襲撃では、襲撃者を道連れにする
+        else if found in ["landmineAssassinate", "doomsdayYandere"]
+            # 襲撃者本人を道連れにする
             canbedead=canbedead.filter (x)->x.id==from
         return if canbedead.length==0
         r=Math.floor Math.random()*canbedead.length
@@ -5887,7 +5900,7 @@ class Elder extends Player
     type:"Elder"
     hasDeadResistance:->true
     checkDeathResistance:(game, found, from)->
-        if (Found.isNormalWerewolfAttack(found) || Found.isNormalVampireAttack(found) || found == "nineTailedFox") && !@flag?
+        if (Found.isNormalWerewolfAttack(found) || Found.isNormalVampireAttack(found) || found in ["nineTailedFox", "doomsdayYandere"]) && !@flag?
             @setFlag "bitten"
             attacker = game.getPlayer from
             if attacker?
@@ -10137,6 +10150,98 @@ class LunaticLover extends Player
             res = true
         return res
 
+class DoomsdayYandere extends Player
+    type: "DoomsdayYandere"
+    team: "Friend"
+    formType: FormType.required
+    midnightSort: 105
+    isHuman:-> !@flag?.awakened
+    werewolfCount:-> if @flag?.awakened then 1 else 0
+    hasDeadlyWeapon:-> !!@flag?.awakened
+    getFortuneResult:-> if @flag?.awakened then FortuneResult.werewolf else FortuneResult.human
+    getPsychicResult:-> if @flag?.awakened then PsychicResult.werewolf else PsychicResult.human
+    sleeping:-> @flag?.beloved? && (!@flag.awakened || @flag.attack?)
+    sunset:(game)->
+        if @flag?.awakened && @flag.attackDay != game.day
+            @setFlag Object.assign {}, @flag, {attack: null, attackDay: game.day}
+    makeJobSelection:(game, isvote)->
+        res = super
+        return res if isvote
+        res.filter (obj)=> obj.value != @id
+    isFormTarget:(jobtype)->
+        jobtype == (if @flag?.awakened then "DoomsdayYandereAttack" else @type)
+    getOpenForms:(game)->
+        forms = super
+        if @flag?.awakened
+            form.type = "DoomsdayYandereAttack" for form in forms
+        forms
+    job:(game, playerid)->
+        if @isPlayerDead(game) || !Phase.isNight(game.phase)
+            return game.i18n.t "error.common.cannotUseSkillNow"
+        if @sleeping game
+            return game.i18n.t "error.common.alreadyUsed"
+        if playerid == @id
+            return game.i18n.t "error.common.noSelectSelf"
+        pl = game.getPlayer playerid
+        unless pl?
+            return game.i18n.t "error.common.nonexistentPlayer"
+        if pl.dead
+            return game.i18n.t "error.common.invalidSelection"
+        if @flag?.awakened
+            @setFlag Object.assign {}, @flag, {attack: playerid, attackDay: game.day}
+            pl.touched game, @id
+            message = "attack"
+        else
+            # 相手に状態を付けず、選ばれたことを知らせない。
+            @setFlag {beloved: playerid, awakened: false}
+            message = "select"
+        splashlog game.id, game, {
+            mode: "skill"
+            to: @id
+            comment: game.i18n.t "roles:DoomsdayYandere.#{message}", {name: @name, target: pl.name}
+        }
+        null
+    beforebury:(game)->
+        return false if @isPlayerDead(game) || @flag?.awakened
+        beloved = game.getPlayer @flag?.beloved
+        return false unless beloved?.dead
+        # 夜中の覚醒では新しい必須行動を増やさず、次の夜から襲撃する。
+        attack = if Phase.isNight(game.phase) then "" else null
+        @setFlag Object.assign {}, @flag, {awakened: true, attack: attack, attackDay: game.day}
+        splashlog game.id, game, {
+            mode: "skill"
+            to: @id
+            comment: game.i18n.t "roles:DoomsdayYandere.awaken", {name: @name, target: beloved.name}
+        }
+        splashlog game.id, game, {
+            mode: "system"
+            comment: game.i18n.t "roles:DoomsdayYandere.awakenPublic"
+        }
+        game.splashjobinfo [@getTopPlayer(game)]
+        false
+    midnight:(game)->
+        return unless @flag?.awakened && @flag.attack
+        target = game.getPlayer game.skillTargetHook.get @flag.attack
+        return unless target? && !target.dead
+        target.die game, "doomsdayYandere", @id
+        if target.dead && target.found == "doomsdayYandere"
+            @addGamelog game, "doomsdayYandereAttack", target.type, target.id
+        null
+    canWinAfterAwakening:(game)->
+        return false unless @flag?.awakened && !@isPlayerDead(game)
+        others = game.players.filter (pl)=> !pl.dead && pl.id != @id
+        humans = others.reduce ((count, pl)-> count + pl.humanCount()), 0
+        # 狂人は村人カウント。悪魔などは村人カウントでも人外として扱う。
+        humans <= @getTopPlayer(game).werewolfCount() && others.every (pl)->
+            !pl.isWerewolf() && !pl.isFox() && !pl.isVampire() &&
+                pl.werewolfCount() == 0 && pl.vampireCount() == 0 &&
+                !Shared.game.nonhumans.some((job)-> pl.isJobType(job))
+    isWinner:(game, team)->
+        if @flag?.awakened
+            return team == @team && @canWinAfterAwakening(game)
+        beloved = game.getPlayer @flag?.beloved
+        team != "Draw" && !@isPlayerDead(game) && beloved? && !beloved.dead
+
 class Hooligan extends Player
     type: "Hooligan"
     team: "Hooligan"
@@ -14175,7 +14280,7 @@ class TrapGuarded extends Complex
             # 反撃する
             canbedead=[]
             ft=game.getPlayer from
-            if found in ["vampire", "nineTailedFox", "landmineAssassinate"]
+            if found in ["vampire", "nineTailedFox", "doomsdayYandere", "landmineAssassinate"]
                 canbedead=game.players.filter (x)->!x.dead && x.id==from
             else
                 canbedead=game.players.filter (x)->!x.dead && x.isWerewolf() && x.isAttacker()
@@ -15271,7 +15376,7 @@ class Chemical extends Complex
             0
         else if @isVampire()
             0
-        else if @isWerewolf()
+        else if @isWerewolf() || @main.werewolfCount() > 0 || @sub?.werewolfCount() > 0
             if @sub?
                 @main.werewolfCount() + @sub.werewolfCount()
             else
@@ -15451,6 +15556,7 @@ jobs=
     Elder:Elder
     Cupid:Cupid
     Stalker:Stalker
+    DoomsdayYandere:DoomsdayYandere
     Cursed:Cursed
     ApprenticeSeer:ApprenticeSeer
     Diseased:Diseased
@@ -15738,6 +15844,7 @@ jobStrength=
     Elder:18
     Cupid:37
     Stalker:10
+    DoomsdayYandere:25
     Cursed:2
     ApprenticeSeer:23
     Diseased:16
@@ -16495,6 +16602,9 @@ module.exports.actions=(req,res,ss)->
                             else if Math.random()<0.06 && !nonavs.LunaticLover
                                 joblist.LunaticLover++
                                 frees--
+                            else if Math.random()<0.06 && !nonavs.DoomsdayYandere
+                                joblist.DoomsdayYandere++
+                                frees--
                         else if 12>=playersnumber>=8
                             if Math.random()<0.045 && !nonavs.Lover
                                 joblist.Lover++
@@ -16507,6 +16617,9 @@ module.exports.actions=(req,res,ss)->
                                 frees--
                             else if Math.random()<0.03 && !nonavs.LunaticLover
                                 joblist.LunaticLover++
+                                frees--
+                            else if Math.random()<0.03 && !nonavs.DoomsdayYandere
+                                joblist.DoomsdayYandere++
                                 frees--
                         else if playersnumber>=17
                             rval = 1
@@ -16526,10 +16639,13 @@ module.exports.actions=(req,res,ss)->
                                 else if Math.random()<0.08 && !nonavs.LunaticLover
                                     joblist.LunaticLover++
                                     frees--
+                                else if Math.random()<0.08 && !nonavs.DoomsdayYandere
+                                    joblist.DoomsdayYandere++
+                                    frees--
                                 else
                                     break
                                 rval *= 0.6
-                    exceptions.push "Cupid", "Lover", "BadLady", "Patissiere", "SnowLover", "LunaticLover"
+                    exceptions.push "Cupid", "Lover", "BadLady", "Patissiere", "SnowLover", "LunaticLover", "DoomsdayYandere"
                     # 決闘者陣営
                     if frees>0
                         if playersnumber<9
