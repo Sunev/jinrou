@@ -114,6 +114,8 @@ messages:
   SnowLover: '请选择你的恋人'
   DecoyWolf: '请选择你要成为诱饵的对象'
   LunaticLover: '请选择疯狂爱慕的对象'
+  DoomsdayYandere: '请选择你的爱慕对象'
+  DoomsdayYandereAttack: '请选择今晚要袭击的对象'
   Hooligan: '请选择加入暴动的对象'
   HooliganAttacker: '请选择施加暴行的对象'
   HooliganGuard: '请选择你要逮捕的对象'

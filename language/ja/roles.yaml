@@ -137,6 +137,8 @@ jobname:
   Raven: '乌鸦'
   DecoyWolf: '囮狼'
   LunaticLover: '狂爱者'
+  DoomsdayYandere: '终末病娇'
+  DoomsdayYandereAttack: '终末病娇'
   Hooligan: '暴徒'
   HooliganAttacker: '暴动者'
   HooliganGuard: '保安'
@@ -796,6 +798,7 @@ Emma:
   result:
     # killed by werewolf
     werewolf: '{{name}} 成为了人狼的食物。'
+    doomsdayYandere: '{{name}} 被终末病娇杀死了。'
     # killed with poison
     poison: '{{name}} 由于中毒死去了。'
     # Killed by QueenSpectator
@@ -911,6 +914,12 @@ DecoyWolf:
 LunaticLover:
   # Select a target of lunatic love.
   select: '{{name}} 把 {{target}} 选为自己疯狂爱慕的对象。'
+
+DoomsdayYandere:
+  select: '{{name}} 把 {{target}} 选为了死心塌地的对象。'
+  awaken: '由于爱的人已经死去。{{name}} 决心毁灭世界。'
+  awakenPublic: '由于爱的人已经死去，终末病娇决心毁灭世界。'
+  attack: '{{name}} 决定袭击 {{target}}。'
   
 Hooligan:
   # Select a new member of hooligan.
