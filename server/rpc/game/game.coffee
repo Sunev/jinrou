@@ -840,11 +840,16 @@ class Game
         game
     # 公開情報
     publicinfo:(obj)->  #obj:オプション
-        # 内部情報(_jobquery など)をクライアントへ出さない
+        # _jobquery は手調黑暗火锅などの伏せられた配役（banした役職・固定人数）を
+        # 含むため、対局中はクライアントへ出さない。
+        # ただし対局終了後は配役が全員に公開されるので、
+        # 「同じ設定で新しい部屋を作る」が機能するよう公開する。
         pubrule = @rule
         if @rule?
             pubrule = {}
             pubrule[k] = v for k, v of @rule when k != "_jobquery"
+            if @finished and @rule._jobquery?
+                pubrule._jobquery = @rule._jobquery
         {
             rule:pubrule
             finished:@finished
