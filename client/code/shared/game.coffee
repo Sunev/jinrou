@@ -705,13 +705,16 @@ exports.jobrules=[
     ]
   }
 ]
+exports.isQuantumRule = isQuantumRule = (name)->
+    name in ["特殊规则.量子人狼", "特殊规则.量子人狼（妖狐）"]
+
 # ルールオブジェクトを得る
 getruleobj=(name)->
     # オブジェクトから探す
-    if name=="特殊规则.量子人狼"
+    if isQuantumRule name
         # 特殊だ!
         return {
-            name:"量子人狼"
+            name:name.split(".")[1]
             rule:null
             suggestedNight:{
                 max:60
@@ -730,7 +733,7 @@ getruleobj=(name)->
     null
 # 规则関数を得る
 exports.getrulefunc=(name)->
-    if name=="内部利用.量子人狼"
+    if name in ["内部利用.量子人狼", "内部利用.量子人狼（妖狐）"]
         # 量子人狼のときは
         return (number)->
             ret={}
@@ -747,6 +750,7 @@ exports.getrulefunc=(name)->
                             if number>=30
                                 ret.Werewolf++
             ret.Diviner=1   #占い
+            ret.Fox=1 if name=="内部利用.量子人狼（妖狐）"
             ret
 
     # ほかはオブジェクトから探す
@@ -1294,7 +1298,7 @@ exports.new_rules=[
                     id: 'decider'
                     defaultChecked: false
                     value: '1'
-                    disabled:(rule)->rule.casting=="特殊规则.量子人狼"
+                    disabled:(rule)->isQuantumRule rule.casting
             }
             {
                 type: 'item'
@@ -1303,7 +1307,7 @@ exports.new_rules=[
                     id:"authority"
                     defaultChecked: false
                     value:"1"
-                    disabled:(rule)->rule.casting=="特殊规则.量子人狼"
+                    disabled:(rule)->isQuantumRule rule.casting
             }
             {
                 type: 'item'
@@ -1312,7 +1316,7 @@ exports.new_rules=[
                     id:"deathnote"
                     defaultChecked: false
                     value:"1"
-                    disabled:(rule)->rule.casting=="特殊规则.量子人狼"
+                    disabled:(rule)->isQuantumRule rule.casting
             }
             {
                 type: 'item'
@@ -1321,7 +1325,7 @@ exports.new_rules=[
                     id:"wolfminion"
                     defaultChecked: false
                     value:"1"
-                    disabled:(rule)->rule.casting=="特殊规则.量子人狼"
+                    disabled:(rule)->isQuantumRule rule.casting
             }
             {
                 type: 'item'
@@ -1330,7 +1334,7 @@ exports.new_rules=[
                     id:"drunk"
                     defaultChecked: false
                     value:"1"
-                    disabled:(rule)->rule.casting=="特殊规则.量子人狼"
+                    disabled:(rule)->isQuantumRule rule.casting
             }
             {
                 type: 'item'
@@ -1874,7 +1878,7 @@ exports.new_rules=[
         type: 'group'
         label:
             id: 'quantum'
-            visible:(rule)->rule.casting=="特殊规则.量子人狼"
+            visible:(rule)->isQuantumRule rule.casting
         items:[
             {
                 type: 'item'

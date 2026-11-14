@@ -235,6 +235,7 @@ log:
     # Human column.
     Human: '人类'
     Werewolf: '人狼'
+    Fox: '妖狐'
     dead: '死亡'
   # 自言自语
   monologue: '{{name}}的自言自语'

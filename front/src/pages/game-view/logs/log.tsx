@@ -172,6 +172,8 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
         </LogLineWrapper>
       );
     } else if (log.mode === 'probability_table') {
+      const rows = Object.entries(log.probability_table);
+      const showFox = rows.some(([, row]) => row.Fox != null);
       // log of probability table for Quantum Werewwolf
       const logStyle = computeLogStyle('probability_table', theme);
       return (
@@ -200,6 +202,7 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
                   )}
                   {/* 人狼 */}
                   <th>{t('log.probabilityTable.Werewolf')}</th>
+                  {showFox && <th>{t('log.probabilityTable.Fox')}</th>}
                   {rule && rule.rules.get('quantumwerewolf_dead') !== 'no' ? (
                     /* 死亡 */
                     <th>{t('log.probabilityTable.dead')}</th>
@@ -207,8 +210,7 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(log.probability_table).map(id => {
-                  const obj = log.probability_table[id];
+                {rows.map(([id, obj]) => {
                   return (
                     <ProbabilityTr dead={obj.dead === 1} key={id}>
                       <td>{sanitizeLog(obj.name)}</td>
@@ -218,6 +220,7 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
                         <ProbTd prob={obj.Diviner} />
                       ) : null}
                       <ProbTd prob={obj.Werewolf} />
+                      {obj.Fox != null && <ProbTd prob={obj.Fox} />}
                       {rule &&
                       rule.rules.get('quantumwerewolf_dead') !== 'no' ? (
                         <ProbTd prob={obj.dead} />
@@ -271,12 +274,12 @@ class OneLogInner extends React.PureComponent<IPropOneLog, {}> {
         log.mode === 'nextturn' || !log.name
           ? null
           : log.mode === 'monologue' || log.mode === 'heavenmonologue'
-            ? t('log.monologue', { name: log.name }) + ':'
-            : log.mode === 'will'
-              ? t('log.will', { name: log.name }) + ':'
-              : log.mode === 'streaming'
-                ? t('log.streaming', { name: log.name }) + ':'
-                : log.name + ':';
+          ? t('log.monologue', { name: log.name }) + ':'
+          : log.mode === 'will'
+          ? t('log.will', { name: log.name }) + ':'
+          : log.mode === 'streaming'
+          ? t('log.streaming', { name: log.name }) + ':'
+          : log.name + ':';
       // Auto-link URLs and room numbers in it.
       const noName = icon == null && !nameText;
       const props = {
@@ -679,8 +682,8 @@ const getFontSize = (size: 'big' | 'small' | undefined) =>
   size === 'big'
     ? 'calc(1.2 * var(--base-font-size))'
     : size === 'small'
-      ? 'calc(0.8 * var(--base-font-size))'
-      : 'var(--base-font-size)';
+    ? 'calc(0.8 * var(--base-font-size))'
+    : 'var(--base-font-size)';
 const getLineHeight = (size: 'big' | 'small' | undefined) =>
   size === 'big' ? '1' : size === 'small' ? '1.3' : '1';
 /**
