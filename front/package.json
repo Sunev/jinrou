@@ -58,7 +58,7 @@
     "color": "^3.1.2",
     "dexie": "^2.0.4",
     "grapheme-splitter": "^1.0.4",
-    "i18next": "^13.1.5",
+    "i18next": "^26.3.4",
     "i18next-xhr-backend": "^2.0.1",
     "memoize-one": "^5.0.4",
     "mobx": "^4.11.0",
